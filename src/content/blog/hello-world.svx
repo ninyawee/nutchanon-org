@@ -1,0 +1,22 @@
+---
+title: Hello World
+description: My first blog post - an introduction to this blog and what to expect.
+date: '2024-12-08'
+published: true
+---
+
+Welcome to my blog! This is my first post, and I'm excited to start sharing my thoughts and experiences with you.
+
+## What to Expect
+
+I plan to write about various topics including:
+
+- **Programming** - Tips, tutorials, and lessons learned
+- **Technology** - New tools and technologies I'm exploring
+- **Personal projects** - Updates on what I'm building
+
+## Why Start a Blog?
+
+Writing helps me think more clearly and solidify my understanding of topics. I hope my posts can be useful to others who are on a similar journey.
+
+Stay tuned for more content!

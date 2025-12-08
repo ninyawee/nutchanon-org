@@ -1,0 +1,48 @@
+---
+title: Getting Started with SvelteKit
+description: A quick overview of building websites with SvelteKit and why I chose it for my blog.
+date: '2024-12-07'
+published: true
+---
+
+SvelteKit has been a joy to work with. Here's why I chose it for building this blog.
+
+## Why SvelteKit?
+
+There are many frameworks to choose from, but SvelteKit stood out for several reasons:
+
+1. **Simplicity** - Svelte's syntax is clean and intuitive
+2. **Performance** - No virtual DOM means faster runtime
+3. **Full-stack ready** - Server-side rendering, static generation, and API routes built-in
+
+## Key Features I'm Using
+
+### File-based Routing
+
+Routes are defined by the file structure in the `src/routes` directory. It's straightforward and easy to understand.
+
+### MDsveX for Blog Posts
+
+This blog uses [mdsvex](https://mdsvex.pngwn.io/) to write posts in Markdown with the ability to use Svelte components when needed.
+
+```javascript
+// Example of loading blog posts
+const posts = import.meta.glob('/src/content/blog/*.svx');
+```
+
+### Static Adapter
+
+For a blog like this, static generation is perfect. The site is pre-rendered at build time and served as static HTML.
+
+## Getting Started
+
+If you want to try SvelteKit, just run:
+
+```bash
+npx sv create my-project
+cd my-project
+npm install
+npm run dev
+```
+
+That's it! You'll have a running development server in seconds.
