@@ -1,0 +1,55 @@
+---
+title: '[Rewrite]Link: Bidirectional Aliasing in Python'
+description: Detailed proposal for a Python language feature enabling multiple variable names referring to identical underlying objects.
+date: '2019-09-25'
+published: true
+---
+
+This article discusses "Link," a proposed language feature allowing multiple variable names to reference the same underlying object within a namespace. The author shares experiences from Python-Ideas discussions with core developers.
+
+## Notation
+
+The proposed syntax uses `a >< b` or `link a, b` to establish connections. Related operations include `unlinks a`, `unlink a`, `links()`, `del_and_unlinks a`, `@link(a,b)` decorators, and `aka(a)` for inspection.
+
+## Core Behaviors
+
+**Basic linking:** When variables link, assignments propagate across all names. Deleting one unlinks all simultaneously.
+
+```python
+a >< b
+a = 1
+print(b)  # 1
+```
+
+**Constraints:** Only one pre-existing assignment allowed before linking, or a `TooManyAssignError` raises.
+
+```python
+x = 5
+x >< y  # OK
+
+a = 1
+b = 'foo'
+a >< b  # Error
+```
+
+## Rationale
+
+**Language transitions:** Developers moving from JavaScript could bridge naming differences. Example: `str.trim >< str.strip`
+
+**Code clarity:** Assigning contextual names reduces cognitive load. The author demonstrates tracking a DataFrame through multiple processing stages with meaningful aliases.
+
+**Simplified aliasing:** Replaces verbose `@property` decorators and manual assignment chains in classes.
+
+**Compatibility:** Library users can rename unfamiliar methods while maintaining functionality.
+
+**Multilingual support:** Enable class/method names in multiple languages simultaneously.
+
+## Implementation Challenges
+
+The author acknowledges significant technical hurdles, citing namespace complexity and performance concerns without presenting solved implementation details.
+
+## Similar Concepts
+
+- C++ references (`auto & a = b`)
+- C preprocessor macros
+- Python's assignment chaining

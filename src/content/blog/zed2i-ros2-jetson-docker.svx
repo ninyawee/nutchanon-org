@@ -1,0 +1,56 @@
+---
+title: How to build ZED 2i Camera x ROS2 Foxy x Nvidia Jetson x Ubuntu 18.04 via Docker
+description: Docker-based approach for integrating the ZED 2i stereo camera with ROS2 Foxy on Nvidia Jetson hardware running Ubuntu 18.04.
+date: '2021-09-15'
+published: true
+---
+
+This article documents a Docker-based approach for integrating the ZED 2i stereo camera with ROS2 Foxy on Nvidia Jetson hardware running Ubuntu 18.04.
+
+## Key Motivation
+
+The author explains two critical drivers for this work:
+- ROS2 Eloquent reached end-of-life; Foxy represents the stable long-term support alternative
+- "Officially, ZED 2i has no launch file at Eloquent branch"
+
+## Core Challenges Identified
+
+The implementation proved difficult due to several factors:
+- Limited available documentation
+- ROS2 Foxy targets Ubuntu 20.04, not 18.04
+- Missing shared libraries in NVIDIA's L4T base image
+- Conflicting information across online resources
+
+## The Dockerfile Solution
+
+The author provides a complete Docker configuration that:
+- Bases on `codustry/ros:foxy-ros-base-l4t-r32.5.0`
+- Downloads and installs ZED SDK 3.5 for Jetpack 4.5
+- Configures environment variables for CUDA and ROS
+- Applies L4T binaries and patches
+- Builds the ZED ROS2 wrapper and diagnostics packages
+
+Key configuration includes symbolic linking and specific CMake arguments to resolve linking issues.
+
+## Failed Approaches
+
+The author documents three unsuccessful methods:
+1. OS upgrade from Ubuntu 18.04 to 20.04 (corrupts package manager)
+2. Building L4T from base images (complexity with CUDA integration)
+3. Starting with Ubuntu 20.04 (incompatible with Jetson drivers)
+
+## Docker Advantages Highlighted
+
+- QEMU enables parallel, local development
+- Cloud builds leverage faster internet connectivity
+- Layer-by-layer inspection capability
+- Faster deployment than SD card flashing
+- Complete reproducibility
+
+## Final Result
+
+The working setup launches successfully with:
+
+```bash
+ros2 launch zed_wrapper zed2i.launch.py
+```

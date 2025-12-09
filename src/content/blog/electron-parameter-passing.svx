@@ -1,0 +1,25 @@
+---
+title: 'Answer: How to pass parameters from main process to render processes in Electron'
+description: Solution for passing parameters between Electron's main and renderer processes.
+date: '2019-12-15'
+published: true
+---
+
+This post references a Stack Overflow discussion regarding parameter passing between Electron's main and renderer processes.
+
+The question addresses a common challenge in Electron applications: how to safely and efficiently pass data from the main process to renderer processes.
+
+## The Problem
+
+In Electron, the main process and renderer processes run in separate contexts for security reasons. This separation means you can't directly share variables between them.
+
+## Solution Approaches
+
+Common approaches to solve this include:
+
+1. **IPC (Inter-Process Communication)** - Using `ipcMain` and `ipcRenderer` modules
+2. **Remote module** - Though deprecated in newer Electron versions
+3. **Preload scripts** - Exposing specific APIs to the renderer via contextBridge
+4. **URL parameters** - Passing data through the window's URL when creating BrowserWindow
+
+For the complete answer with code examples, see [Stack Overflow Q&A #59347064](https://stackoverflow.com/questions/59347064).

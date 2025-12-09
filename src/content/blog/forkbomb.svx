@@ -1,0 +1,111 @@
+---
+title: Fork Bomb คืออะไร? และวิธีทดสอบอย่างปลอดภัย
+description: มาทำความรู้จักกับ Fork Bomb โค้ดสั้นๆ ที่สามารถทำให้ระบบล่มได้ พร้อมวิธีทดสอบใน Docker อย่างปลอดภัย
+date: '2024-12-09'
+published: true
+---
+
+## ที่มา
+
+เจอคลิปสั้นๆ จาก [@endoffilee](https://www.instagram.com/endoffilee/) อธิบายเรื่อง Fork Bomb ได้น่าสนใจมาก เลยลองทดสอบดู
+
+![Fork Bomb Reels จาก EOF Academy](./forkbomb-eof-reels.png)
+
+## Fork Bomb คืออะไร?
+
+Fork Bomb คือโค้ดที่สร้าง process ใหม่ซ้ำๆ แบบ recursive จนทรัพยากรของระบบหมด ทำให้เครื่องค้างหรือล่มได้
+
+โค้ดที่โด่งดังที่สุดคือ:
+
+```bash
+:(){ :|:& };:
+```
+
+## อธิบายโค้ด
+
+มาแยกส่วนกันดู:
+
+| ส่วน | ความหมาย |
+|------|----------|
+| `:()` | ประกาศฟังก์ชันชื่อ `:` |
+| `{ :|:& }` | เรียกตัวเอง 2 ครั้ง ผ่าน pipe และรันใน background |
+| `;` | จบการประกาศฟังก์ชัน |
+| `:` | เรียกฟังก์ชัน |
+
+ถ้าเขียนให้อ่านง่ายขึ้น:
+
+```bash
+bomb() {
+    bomb | bomb &
+}
+bomb
+```
+
+ทุกครั้งที่ฟังก์ชันถูกเรียก มันจะสร้าง process ใหม่ 2 ตัว แต่ละตัวก็สร้างอีก 2 ตัว เป็นแบบนี้ไปเรื่อยๆ (exponential growth)
+
+## ทดสอบอย่างปลอดภัยด้วย Docker
+
+**อย่าลองบนเครื่องจริงเด็ดขาด!** ใช้ Docker container ที่จำกัดทรัพยากรแทน:
+
+```bash
+docker run -it --rm \
+  --memory=256m \
+  --memory-swap=256m \
+  --cpus=0.5 \
+  --pids-limit=100 \
+  --name forkbomb-test \
+  ubuntu:latest bash
+```
+
+### อธิบาย flags:
+
+- `--memory=256m` - จำกัด RAM ไว้ที่ 256MB
+- `--memory-swap=256m` - ไม่ให้ใช้ swap
+- `--cpus=0.5` - ใช้ CPU ได้แค่ครึ่งเดียว
+- `--pids-limit=100` - **สำคัญที่สุด** จำกัดจำนวน process ไว้ที่ 100
+
+เมื่อเข้าไปใน container แล้ว ลองรัน:
+
+```bash
+:(){ :|:& };:
+```
+
+จะเห็น error แบบนี้:
+
+![ผลการทดสอบ Fork Bomb ใน Docker](./forkbomb-test-result.png)
+
+```
+bash: fork: retry: Resource temporarily unavailable
+```
+
+นั่นหมายความว่า `--pids-limit` ทำงานแล้ว ระบบปฏิเสธการสร้าง process ใหม่
+
+### คำเตือน: รีบ kill container!
+
+Error message จะพิมพ์ออกมาเรื่อยๆ ไม่หยุด ถ้าปล่อยไว้นาน **log file ที่ host จะบวมมาก!**
+
+รีบหยุด container จาก terminal อื่น:
+
+```bash
+docker kill forkbomb-test
+```
+
+> `Ctrl+C` ไม่ทำงาน! เพราะ shell โดน spam error จนไม่ตอบสนอง ต้อง kill จากข้างนอกเท่านั้น
+
+## การป้องกันบน Linux
+
+สามารถจำกัด process ต่อ user ได้ด้วย `ulimit`:
+
+```bash
+ulimit -u 100  # จำกัดไว้ที่ 100 process
+```
+
+หรือตั้งค่าถาวรใน `/etc/security/limits.conf`:
+
+```
+username hard nproc 200
+```
+
+## สรุป
+
+Fork Bomb เป็นตัวอย่างที่ดีของ Denial of Service (DoS) attack แบบง่ายๆ การเข้าใจมันช่วยให้เราป้องกันระบบได้ดีขึ้น และการใช้ container กับ resource limits ก็เป็นวิธีที่ดีในการทดสอบอย่างปลอดภัย
