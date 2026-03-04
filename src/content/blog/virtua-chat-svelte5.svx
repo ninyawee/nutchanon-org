@@ -1,11 +1,14 @@
 ---
 title: "I Tried 3 Virtual List Libraries for a Chat App in Svelte 5 — Here's What Actually Works"
-description: A journey through three virtual scrolling approaches for a chat interface in Svelte 5, from buggy workarounds to a clean solution with virtua.
+description: "5 bugs with svelte-virtual-list, a failed attempt without virtualization, and the shift timing trap in virtua that makes or breaks scroll anchoring in Svelte 5 chat UIs."
 date: '2026-03-03'
 published: true
+image: /blog/virtua-chat-svelte5/og.png
 ---
 
 Building a chat interface sounds simple until you need virtual scrolling. Newest messages at the bottom. Scroll up to load older messages — without the viewport jumping. Auto-scroll on new messages. Jump-to-message navigation.
+
+![Chat interface built with Svelte 5 and virtua](/blog/virtua-chat-svelte5/chat-ui.png)
 
 I went through three approaches before landing on one that actually works in Svelte 5. Here's the full journey, the bugs, and the code that solved them.
 

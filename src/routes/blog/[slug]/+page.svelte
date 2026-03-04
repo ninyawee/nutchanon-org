@@ -7,6 +7,16 @@
 <svelte:head>
 	<title>{data.meta.title} - Nutchanon</title>
 	<meta name="description" content={data.meta.description} />
+	<meta property="og:title" content={data.meta.title} />
+	<meta property="og:description" content={data.meta.description} />
+	<meta property="og:type" content="article" />
+	{#if data.meta.image}
+		<meta property="og:image" content={'https://nutchanon.org' + data.meta.image} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content={'https://nutchanon.org' + data.meta.image} />
+	{/if}
+	<meta name="twitter:title" content={data.meta.title} />
+	<meta name="twitter:description" content={data.meta.description} />
 </svelte:head>
 
 <article>
