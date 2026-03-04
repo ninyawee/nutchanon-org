@@ -78,6 +78,8 @@ The key insight: **the problem was the library, not virtualization itself**.
 
 ## Attempt 3: `virtua` — The One That Works
 
+![virtua GitHub repository](/blog/virtua-chat-svelte5/virtua-repo.png)
+
 [virtua](https://github.com/inokawa/virtua) (v0.48.6, ~3kB) has native Svelte 5 support. Its components use `$props()`, `$state()`, `$derived()`, `$effect()` directly. No wrapper, no adapter.
 
 ```svelte
@@ -267,6 +269,8 @@ const virtualItems: VirtualItem[] = $derived.by(() => {
 Messages stay in **natural chronological order** (oldest first). No `.reverse()`. `virtualItems[0]` is the top, `virtualItems[last]` is the bottom. `getKey` returns `message.uid` for messages and the `key` field for metadata items.
 
 ## Before and After
+
+![virtua bundle size on Bundlephobia — 6kB gzipped, zero dependencies](/blog/virtua-chat-svelte5/virtua-bundle.png)
 
 | Aspect | svelte-virtual-list | virtua |
 |---|---|---|
