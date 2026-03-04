@@ -88,6 +88,12 @@
 		margin-bottom: 0.5rem;
 	}
 
+	.content :global(img) {
+		max-width: 100%;
+		height: auto;
+		border-radius: 0.5rem;
+	}
+
 	.content :global(blockquote) {
 		border-left: 3px solid var(--color-primary);
 		padding-left: 1rem;
