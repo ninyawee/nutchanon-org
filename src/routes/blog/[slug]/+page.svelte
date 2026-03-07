@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { copyCode } from '$lib/copy-code.svelte';
+	import { lightbox } from '$lib/lightbox.svelte';
 
 	let { data }: { data: PageData } = $props();
 </script>
@@ -26,7 +27,7 @@
 		<time datetime={data.meta.date}>{formatDate(data.meta.date)}</time>
 	</header>
 
-	<div class="content" use:copyCode>
+	<div class="content" use:copyCode use:lightbox>
 		<data.content />
 	</div>
 

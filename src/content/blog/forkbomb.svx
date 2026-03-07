@@ -5,6 +5,10 @@ date: '2024-12-09'
 published: true
 ---
 
+<script>
+	import forkbombResult from './images/forkbomb/forkbomb-test-result.png?format=webp';
+</script>
+
 ## ที่มา
 
 เจอคลิปสั้นๆ จาก [@endoffilee](https://www.instagram.com/endoffilee/) อธิบายเรื่อง Fork Bomb ได้น่าสนใจมาก เลยลองทดสอบดู
@@ -71,7 +75,7 @@ docker run -it --rm \
 
 จะเห็น error แบบนี้:
 
-![ผลการทดสอบ Fork Bomb ใน Docker](/blog/forkbomb/forkbomb-test-result.png)
+<img src={forkbombResult} alt="ผลการทดสอบ Fork Bomb ใน Docker" />
 
 ```
 bash: fork: retry: Resource temporarily unavailable

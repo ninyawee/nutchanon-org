@@ -1,5 +1,5 @@
 ---
-title: "700x Compression: Finding the Best Spatial Format for AI Map Agents"
+title: "Stop Sending GeoJSON to LLMs: 6 Formats Tested for Spatial Reasoning"
 description: "I tested 6 ways to describe a map viewport to an AI — from raw GeoJSON (39K tokens) to a 57-token raycast that scored 8/8 on spatial reasoning. Here's the full journey."
 date: '2026-03-07'
 image: /blog/agentic-gis-spatial-formats/og.png
@@ -12,6 +12,9 @@ published: true
 	import CompressionFunnel from '$lib/components/blog/CompressionFunnel.svelte';
 	import BenchmarkChart from '$lib/components/blog/BenchmarkChart.svelte';
 	import FormatCardsRow from '$lib/components/blog/FormatCardsRow.svelte';
+	import drcToyMap from './images/agentic-gis-spatial-formats/drc-toy-map.png?format=webp';
+	import bangkokViewport from './images/agentic-gis-spatial-formats/bangkok-viewport-geojson.png?format=webp';
+	import deedSplitTool from './images/agentic-gis-spatial-formats/deed-split-tool.png?format=webp';
 </script>
 
 <TokenCounter />
@@ -40,7 +43,7 @@ Two test areas:
 
 Data extracted from OpenStreetMap via the Overpass API, clipped to the map viewport.
 
-![DRC toy map showing building clusters with H3 hexagonal grid overlay](/blog/agentic-gis-spatial-formats/drc-toy-map.png)
+<img src={drcToyMap} alt="DRC toy map showing building clusters with H3 hexagonal grid overlay" />
 
 <div id="step-raw-geojson">
 
@@ -90,7 +93,7 @@ Instead of coordinates, what if we used H3 hexagonal grid cells? Each res-12 cel
 2. Represent each cell as a 4-digit child-index path
 3. List what's inside each cell
 
-```json
+```
 {
   "root": "886ac3c15bfffff",
   "cells": {
@@ -178,7 +181,7 @@ Why this works:
 
 For Bangkok, the raycast immediately reveals the subject is inside a temple compound:
 
-![Bangkok test viewport showing Wat Kanchana Singhat area with raw GeoJSON](/blog/agentic-gis-spatial-formats/bangkok-viewport-geojson.png)
+<img src={bangkokViewport} alt="Bangkok test viewport showing Wat Kanchana Singhat area with raw GeoJSON" />
 
 ```
 @(13.760,100.454)
@@ -258,7 +261,7 @@ The key design: `describe()` is the cheap text feedback loop (~100 tokens per ca
 
 I also built a web tool for splitting land parcels — place reference points, draw split lines (perpendicular, parallel), select grid cells, and assign them to parts, with area calculations in Thai rai-ngan-wah units and GeoJSON export.
 
-![Land split tool showing a parcel divided into 3 parts over satellite imagery](/blog/agentic-gis-spatial-formats/deed-split-tool.png)
+<img src={deedSplitTool} alt="Land split tool showing a parcel divided into 3 parts over satellite imagery" />
 
 This is exactly the kind of task a digitizing agent could help with: "split this parcel into 3 equal parts, with each part having road frontage." The agent would need to understand the parcel shape, the road direction, calculate areas, and propose split lines — all requiring tight spatial reasoning at ~9m resolution.
 
