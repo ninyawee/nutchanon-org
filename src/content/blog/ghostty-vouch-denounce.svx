@@ -1,0 +1,91 @@
+---
+title: "Ghostty's Vouch-Denounce System: Trust Management for Open Source in the AI Era"
+description: "Ghostty solved the AI slop problem not by banning AI, but by gating who can contribute. A lightweight vouch/denounce system using a plain text file and bot commands — and it's portable across projects."
+date: '2026-03-18'
+published: true
+---
+
+## The Problem
+
+AI made contributing to open source trivially easy — and that's the problem. Maintainers now spend more time rejecting low-effort, AI-generated pull requests than reviewing real contributions. The code compiles, the tests pass, but the contributor can't explain what it does.
+
+[Ghostty](https://github.com/ghostty-org/ghostty), the terminal emulator by Mitchell Hashimoto, hit this wall and built a system to deal with it. What's interesting is their stance: they're not anti-AI. Ghostty itself is built with AI tools. The problem isn't the tool — it's unqualified people using the tool.
+
+> "Our reason for the strict AI policy is not due to an anti-AI stance, but instead due to the number of highly unqualified people using AI."
+
+## The Vouch System
+
+New contributors can't just open a PR. They have to earn trust first:
+
+1. Open a **Vouch Request** discussion describing what you plan to contribute
+2. Write it in your own voice — keep it concise
+3. A maintainer replies `!vouch` if approved
+4. Only then can you submit PRs
+
+Unapproved PRs are **auto-closed**. No exceptions.
+
+This flips the default from "trust until proven bad" to "prove yourself, then contribute." It's a small friction that filters out the drive-by slop submissions while letting genuine contributors through.
+
+## The Denounce System
+
+When someone violates the rules — submitting AI slop, being disrespectful, wasting maintainer time — they get **publicly denounced**:
+
+- Username added to [`.github/VOUCHED.td`](https://github.com/ghostty-org/ghostty/blob/main/.github/VOUCHED.td) with a `-` prefix
+- All future interactions (PRs, issues, comments) are auto-closed by bots
+- The list is public and portable — other projects can reference it
+
+The `VOUCHED.td` format is dead simple:
+
+```
+# Vouched contributors (one per line)
+alice
+bob
+github:carol
+
+# Denounced users (prefixed with -)
+-spammer123    # Disrespectful AI user
+```
+
+As of March 2026, the file has ~180+ vouched contributors and at least one publicly denounced user.
+
+## The AI Policy
+
+Ghostty's AI rules are clear — five requirements for every contributor:
+
+1. **Disclose** — name your AI tool and describe the extent of involvement
+2. **Understand** — you must be able to explain every line without AI help
+3. **Edit** — AI-drafted issues and comments must be human-reviewed before posting
+4. **No generated media** — code and text are fine, images/video/audio are not
+5. **Accountability** — violations lead to denouncement
+
+Maintainers are exempt. They've already proven they can be trusted.
+
+## Why This Matters Beyond Ghostty
+
+The vouch-denounce system is interesting because of what it **isn't**:
+
+- It's not a complex bot framework — it's a text file and two commands (`!vouch`, `!denounce`)
+- It's not anti-AI — it's anti-slop
+- It's not per-project only — the denounce list is **federated**. Any project can import Ghostty's blocklist
+
+This is essentially a **lightweight reputation system for open source**. Instead of trying to detect AI-generated code (which is a losing battle), it gates on the human. Can this person explain their work? Have they shown good faith?
+
+The shift from "review every PR" to "gate who can PR" is a meaningful design choice. It trades a small upfront cost (vouch requests) for a massive reduction in noise.
+
+## Adopting This for Your Own Project
+
+The implementation is minimal:
+
+1. Add a `VOUCHED.td` file listing trusted contributors
+2. Set up a "Vouch Request" discussion category
+3. Add a bot or GitHub Action to auto-close PRs from non-vouched users
+4. Write an `AI_POLICY.md` setting expectations
+5. Optionally import denounce lists from projects you trust
+
+The harder part is the social contract: being willing to publicly denounce bad actors and maintaining the list over time.
+
+## Links
+
+- [Ghostty CONTRIBUTING.md](https://github.com/ghostty-org/ghostty/blob/main/CONTRIBUTING.md)
+- [Ghostty AI_POLICY.md](https://github.com/ghostty-org/ghostty/blob/main/AI_POLICY.md)
+- [.github/VOUCHED.td](https://github.com/ghostty-org/ghostty/blob/main/.github/VOUCHED.td)
