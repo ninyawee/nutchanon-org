@@ -1,0 +1,319 @@
+---
+title: "Don't sudo claude -- Build a Privilege Escalation Hook for Claude Code"
+description: "How I built a zenity-based sudo hook that gives Claude Code GUI privilege escalation on Ubuntu -- confirmation popup, password dialog, and output capture in 100 lines of JavaScript."
+date: '2026-03-22'
+image: /blog/claude-code-sudo-hook/og.png
+published: true
+---
+
+<script>
+	let lang = $state('en');
+</script>
+
+<div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+	<button onclick={() => lang = 'en'} class:active={lang === 'en'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'en' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">EN</button>
+	<button onclick={() => lang = 'th'} class:active={lang === 'th'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'th' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">TH</button>
+	<button onclick={() => lang = 'cn'} class:active={lang === 'cn'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'cn' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">CN</button>
+</div>
+
+{#if lang === 'en'}
+
+## The Problem
+
+Claude Code runs inside a non-interactive terminal. When it tries to run a privileged command like `sudo apt update`, Linux replies:
+
+> sudo: a terminal is required to read the password
+
+![Terminal showing sudo failure in Claude Code](/blog/claude-code-sudo-hook/terminal-failure.png)
+
+The obvious fix -- `sudo $(which claude)` -- is terrible. You'd be handing root access to an AI agent. Every file read, every command, every network call would run as root. That's not privilege escalation, that's privilege surrender.
+
+What you actually want: Claude asks for permission **per command**, you see exactly what it wants to run, and you approve or deny through a GUI popup. Like `polkit` for AI agents.
+
+## The Solution
+
+Claude Code has a [hooks system](https://docs.anthropic.com/en/docs/claude-code/hooks) that intercepts tool calls before they execute. A `PreToolUse` hook on the `Bash` tool can catch every shell command, inspect it for `sudo`, and pop up a native dialog.
+
+The flow:
+
+1. **Detect** -- regex matches `sudo` used as a command (not inside file paths or strings)
+2. **Confirm** -- zenity shows the full command in a popup. You click **Allow** or **Block**
+3. **Execute** -- if allowed, runs with `SUDO_ASKPASS` pointing to a zenity password dialog. Output is captured and returned to Claude
+
+![Zenity confirmation dialog showing the sudo command](/blog/claude-code-sudo-hook/zenity-confirm.png)
+
+The hook itself executes the command and returns the output. It then exits with code 2, which tells Claude Code to **block** the original command (since we already ran it). This prevents double execution.
+
+## The Code
+
+Two files. That's it.
+
+### sudo-confirm.js (the hook)
+
+This is a PreToolUse hook that reads the command from stdin, checks for sudo, shows a zenity confirmation dialog, and if approved, executes the command with `SUDO_ASKPASS` set to the askpass script. It uses `execFileSync` for the zenity dialog (safe, no shell) and `execSync` for the actual command (needs shell features). The hook captures stdout/stderr and returns them via stderr to Claude, then exits with code 2 to block the original command.
+
+Key design decisions:
+- The regex `/(^|&&|\|\||;|\||\$\()\s*sudo\b/` matches sudo only when used as a command start, not inside paths like `/etc/sudoers`
+- Commands are truncated at 300 chars and HTML-escaped for the zenity display
+- `sudo -A` flag tells sudo to use `SUDO_ASKPASS` instead of a terminal
+- Exit code 2 means "block" in Claude Code hooks -- the hook ran the command itself, so blocking prevents double execution
+
+See the [full source on GitHub](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-confirm.js).
+
+### sudo-askpass.sh (the password dialog)
+
+A three-line script. `sudo -A` calls it whenever it needs a password. Zenity pops up a native GNOME password dialog. If the sudo credential cache is still warm, it never gets called at all.
+
+See the [full source on GitHub](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-askpass.sh).
+
+## Hook Registration
+
+Add this to your `~/.claude/hooks/hooks.json` (or `settings.json` under the `hooks` key):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun ~/.claude/scripts/hooks/sudo-confirm.js"
+          }
+        ],
+        "description": "Intercept sudo commands with GNOME confirmation popup"
+      }
+    ]
+  }
+}
+```
+
+## Setup
+
+1. Install zenity: `sudo apt install zenity`
+2. Save `sudo-confirm.js` to `~/.claude/scripts/hooks/`
+3. Save `sudo-askpass.sh` next to it. Make it executable: `chmod +x sudo-askpass.sh`
+4. Register the hook in your Claude Code settings
+5. Restart Claude Code
+
+Now when Claude runs any `sudo` command, you get a native desktop popup showing exactly what it wants to do. No more running Claude as root. No more silent privilege escalation.
+
+## macOS Note
+
+This hook uses zenity, which is a GTK/GNOME tool. On macOS, you have two options:
+
+1. **osascript (native)** -- replace zenity calls with AppleScript dialogs. The confirmation becomes `osascript -e 'display dialog "..." buttons {"Block","Allow"}'` and the password prompt becomes `osascript -e 'display dialog "Password:" default answer "" with hidden answer'`. No dependencies needed.
+2. **Install zenity via Homebrew** -- `brew install zenity` works, but the dialogs will look out of place on macOS.
+
+The hook logic (detect, confirm, execute) stays the same -- only the dialog commands change.
+
+## Source
+
+The full hook implementation is managed with chezmoi and lives in [ninyawee/dotfiles](https://github.com/ninyawee/dotfiles/tree/main/dot_claude/scripts/hooks). Clone the repo or grab the two files directly:
+
+- [`sudo-confirm.js`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-confirm.js)
+- [`sudo-askpass.sh`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-askpass.sh)
+- [`hooks.json`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/hooks/hooks.json) (full hook registration with other useful hooks)
+
+{:else if lang === 'th'}
+
+## ปัญหา
+
+Claude Code ทำงานใน terminal แบบ non-interactive เมื่อมันลองรันคำสั่ง sudo เช่น `sudo apt update` Linux จะตอบกลับว่า:
+
+> sudo: a terminal is required to read the password
+
+![Terminal แสดงข้อผิดพลาด sudo ใน Claude Code](/blog/claude-code-sudo-hook/terminal-failure.png)
+
+วิธีแก้ที่ดูง่าย -- `sudo $(which claude)` -- อันตรายมาก เพราะจะเป็นการให้สิทธิ์ root แก่ AI agent ทุกการอ่านไฟล์ ทุกคำสั่ง ทุก network call จะรันเป็น root นั่นไม่ใช่ privilege escalation แต่เป็น privilege surrender
+
+สิ่งที่เราต้องการจริงๆ คือ: Claude ขออนุญาต **ทีละคำสั่ง** เราเห็นว่ามันจะรันอะไร แล้วอนุมัติหรือปฏิเสธผ่าน GUI popup เหมือน `polkit` สำหรับ AI agents
+
+## วิธีแก้
+
+Claude Code มี [hooks system](https://docs.anthropic.com/en/docs/claude-code/hooks) ที่ดักจับ tool calls ก่อนจะรัน `PreToolUse` hook บน `Bash` tool สามารถจับทุกคำสั่ง shell ตรวจจับ `sudo` แล้วแสดง dialog popup
+
+ขั้นตอนการทำงาน:
+
+1. **ตรวจจับ** -- regex จับคู่ `sudo` ที่ใช้เป็นคำสั่ง (ไม่ใช่ใน file path หรือ string)
+2. **ยืนยัน** -- zenity แสดงคำสั่งเต็มใน popup ผู้ใช้คลิก **Allow** หรือ **Block**
+3. **รัน** -- ถ้าอนุญาต จะรันด้วย `SUDO_ASKPASS` ชี้ไปที่ zenity password dialog ผลลัพธ์ถูกจับและส่งกลับให้ Claude
+
+![Zenity confirmation dialog แสดงคำสั่ง sudo](/blog/claude-code-sudo-hook/zenity-confirm.png)
+
+Hook จะรันคำสั่งเองแล้ว exit ด้วย code 2 ซึ่งบอก Claude Code ให้ **block** คำสั่งเดิม (เพราะเรารันไปแล้ว) ป้องกันการรันซ้ำ
+
+## โค้ด
+
+สองไฟล์ แค่นั้น
+
+### sudo-confirm.js (hook หลัก)
+
+PreToolUse hook ที่อ่านคำสั่งจาก stdin ตรวจหา sudo แสดง zenity confirmation dialog และถ้าอนุมัติแล้ว รันคำสั่งด้วย `SUDO_ASKPASS` ชี้ไปที่ askpass script ใช้ `execFileSync` สำหรับ zenity dialog (ปลอดภัย ไม่ใช้ shell) และ `execSync` สำหรับคำสั่งจริง (ต้องใช้ shell features)
+
+การตัดสินใจในการออกแบบ:
+- Regex `/(^|&&|\|\||;|\||\$\()\s*sudo\b/` จับ sudo เฉพาะเมื่อเป็นจุดเริ่มต้นคำสั่ง ไม่ใช่ใน path เช่น `/etc/sudoers`
+- คำสั่งยาวเกิน 300 ตัวอักษรจะถูกตัดและ escape HTML สำหรับ zenity
+- Flag `sudo -A` บอก sudo ให้ใช้ `SUDO_ASKPASS` แทนที่จะถาม terminal
+- Exit code 2 หมายถึง "block" ใน Claude Code hooks -- hook รันคำสั่งเองแล้ว การ block ป้องกันการรันซ้ำ
+
+ดู [source เต็มบน GitHub](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-confirm.js)
+
+### sudo-askpass.sh (dialog ใส่รหัสผ่าน)
+
+สามบรรทัด `sudo -A` จะเรียก script นี้เมื่อต้องการรหัสผ่าน Zenity จะแสดง GNOME password dialog ถ้า sudo credential cache ยังไม่หมดอายุ มันจะไม่ถูกเรียกเลย
+
+ดู [source เต็มบน GitHub](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-askpass.sh)
+
+## ลงทะเบียน Hook
+
+เพิ่มใน `~/.claude/hooks/hooks.json` (หรือใน `settings.json` ใต้ key `hooks`):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun ~/.claude/scripts/hooks/sudo-confirm.js"
+          }
+        ],
+        "description": "Intercept sudo commands with GNOME confirmation popup"
+      }
+    ]
+  }
+}
+```
+
+## วิธีติดตั้ง
+
+1. ติดตั้ง zenity: `sudo apt install zenity`
+2. บันทึก `sudo-confirm.js` ไว้ที่ `~/.claude/scripts/hooks/`
+3. บันทึก `sudo-askpass.sh` ไว้ข้างๆ ทำให้ executable: `chmod +x sudo-askpass.sh`
+4. ลงทะเบียน hook ใน Claude Code settings
+5. รีสตาร์ท Claude Code
+
+ตอนนี้เมื่อ Claude รันคำสั่ง `sudo` ใดๆ คุณจะได้รับ desktop popup แสดงสิ่งที่มันต้องการทำ ไม่ต้องรัน Claude เป็น root อีกต่อไป ไม่มี privilege escalation แบบเงียบๆ อีกแล้ว
+
+## หมายเหตุสำหรับ macOS
+
+Hook นี้ใช้ zenity ซึ่งเป็นเครื่องมือ GTK/GNOME บน macOS มีสองทางเลือก:
+
+1. **osascript (native)** -- แทนที่ zenity ด้วย AppleScript dialog ส่วนยืนยันเป็น `osascript -e 'display dialog "..." buttons {<!-- -->"Block","Allow"}'` และส่วนรหัสผ่านเป็น `osascript -e 'display dialog "Password:" default answer "" with hidden answer'` ไม่ต้องติดตั้งอะไรเพิ่ม
+2. **ติดตั้ง zenity ผ่าน Homebrew** -- `brew install zenity` ใช้ได้ แต่ dialog จะดูไม่เข้ากับ macOS
+
+Logic ของ hook (ตรวจจับ, ยืนยัน, รัน) ยังเหมือนเดิม -- เปลี่ยนแค่คำสั่ง dialog
+
+## Source
+
+Hook ทั้งหมดจัดการด้วย chezmoi อยู่ใน [ninyawee/dotfiles](https://github.com/ninyawee/dotfiles/tree/main/dot_claude/scripts/hooks) Clone repo หรือดึงสองไฟล์ตรงๆ:
+
+- [`sudo-confirm.js`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-confirm.js)
+- [`sudo-askpass.sh`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-askpass.sh)
+- [`hooks.json`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/hooks/hooks.json) (hook registration เต็มพร้อม hook อื่นๆ ที่มีประโยชน์)
+
+{:else if lang === 'cn'}
+
+## 问题
+
+Claude Code 在非交互式终端中运行。当它尝试执行特权命令如 `sudo apt update` 时，Linux 回复：
+
+> sudo: a terminal is required to read the password
+
+![终端显示 Claude Code 中的 sudo 错误](/blog/claude-code-sudo-hook/terminal-failure.png)
+
+显而易见的解决方案 -- `sudo $(which claude)` -- 非常糟糕。这等于把 root 权限交给 AI agent。每个文件读取、每个命令、每个网络调用都会以 root 身份运行。这不是权限提升，这是权限投降。
+
+你真正需要的是：Claude **逐条命令**请求权限，你能看到它想运行什么，然后通过 GUI 弹窗批准或拒绝。就像给 AI agent 用的 `polkit`。
+
+## 解决方案
+
+Claude Code 有一个 [hooks 系统](https://docs.anthropic.com/en/docs/claude-code/hooks)，可以在工具调用执行前拦截。`PreToolUse` hook 作用于 `Bash` 工具，可以捕获每个 shell 命令，检查是否包含 `sudo`，然后弹出原生对话框。
+
+工作流程：
+
+1. **检测** -- 正则表达式匹配作为命令使用的 `sudo`（不是文件路径或字符串中的）
+2. **确认** -- zenity 在弹窗中显示完整命令。用户点击 **Allow** 或 **Block**
+3. **执行** -- 如果批准，使用 `SUDO_ASKPASS` 指向 zenity 密码对话框运行。捕获输出并返回给 Claude
+
+![Zenity 确认对话框显示 sudo 命令](/blog/claude-code-sudo-hook/zenity-confirm.png)
+
+Hook 自己执行命令并返回输出，然后以 exit code 2 退出，告诉 Claude Code **阻止**原始命令（因为我们已经执行过了），防止重复执行。
+
+## 代码
+
+两个文件，仅此而已。
+
+### sudo-confirm.js（主 hook）
+
+PreToolUse hook 从 stdin 读取命令，检查是否有 sudo，显示 zenity 确认对话框，如果批准则使用 `SUDO_ASKPASS` 指向 askpass 脚本执行命令。对 zenity 对话框使用 `execFileSync`（安全，无 shell），对实际命令使用 `execSync`（需要 shell 功能）。
+
+关键设计决策：
+- 正则 `/(^|&&|\|\||;|\||\$\()\s*sudo\b/` 仅匹配作为命令开头的 sudo，不匹配路径中的如 `/etc/sudoers`
+- 超过300字符的命令会被截断并进行 HTML 转义用于 zenity 显示
+- `sudo -A` 标志告诉 sudo 使用 `SUDO_ASKPASS` 而不是终端
+- Exit code 2 在 Claude Code hooks 中表示"阻止" -- hook 已经执行了命令，阻止原始命令防止重复执行
+
+查看 [GitHub 上的完整源码](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-confirm.js)。
+
+### sudo-askpass.sh（密码对话框）
+
+三行代码。`sudo -A` 在需要密码时调用这个脚本。Zenity 弹出原生 GNOME 密码对话框。如果 sudo 凭证缓存还未过期，它根本不会被调用。
+
+查看 [GitHub 上的完整源码](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-askpass.sh)。
+
+## 注册 Hook
+
+添加到 `~/.claude/hooks/hooks.json`（或 `settings.json` 的 `hooks` key 下）：
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun ~/.claude/scripts/hooks/sudo-confirm.js"
+          }
+        ],
+        "description": "Intercept sudo commands with GNOME confirmation popup"
+      }
+    ]
+  }
+}
+```
+
+## 安装步骤
+
+1. 安装 zenity：`sudo apt install zenity`
+2. 将 `sudo-confirm.js` 保存到 `~/.claude/scripts/hooks/`
+3. 将 `sudo-askpass.sh` 保存在旁边，设为可执行：`chmod +x sudo-askpass.sh`
+4. 在 Claude Code 设置中注册 hook
+5. 重启 Claude Code
+
+现在当 Claude 运行任何 `sudo` 命令时，你会收到桌面弹窗，显示它想要做什么。不再需要以 root 身份运行 Claude，不再有静默的权限提升。
+
+## macOS 注意事项
+
+这个 hook 使用 zenity，这是一个 GTK/GNOME 工具。在 macOS 上有两个选择：
+
+1. **osascript（原生）** -- 用 AppleScript 对话框替换 zenity 调用。确认变为 `osascript -e 'display dialog "..." buttons {"Block","Allow"}'`，密码提示变为 `osascript -e 'display dialog "Password:" default answer "" with hidden answer'`。无需安装任何依赖。
+2. **通过 Homebrew 安装 zenity** -- `brew install zenity` 可以使用，但对话框在 macOS 上会显得格格不入。
+
+Hook 的逻辑（检测、确认、执行）保持不变 -- 只有对话框命令需要更改。
+
+## 源码
+
+完整的 hook 实现使用 chezmoi 管理，位于 [ninyawee/dotfiles](https://github.com/ninyawee/dotfiles/tree/main/dot_claude/scripts/hooks)。克隆仓库或直接获取两个文件：
+
+- [`sudo-confirm.js`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-confirm.js)
+- [`sudo-askpass.sh`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/scripts/hooks/executable_sudo-askpass.sh)
+- [`hooks.json`](https://github.com/ninyawee/dotfiles/blob/main/dot_claude/hooks/hooks.json)（完整的 hook 注册，包含其他有用的 hooks）
+
+{/if}
