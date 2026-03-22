@@ -8,14 +8,14 @@ export default defineConfig({
 	workers: process.env.CI ? 1 : undefined,
 	reporter: [['html', { outputFolder: 'playwright-report' }]],
 	use: {
-		baseURL: 'http://localhost:5173',
+		baseURL: 'http://localhost:5176',
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure'
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {
-		command: 'bun run dev',
-		url: 'http://localhost:5173',
+		command: 'bun run dev --port 5176',
+		url: 'http://localhost:5176',
 		reuseExistingServer: true,
 		timeout: 120000
 	}
