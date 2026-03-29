@@ -2,7 +2,7 @@
 title: "agent-browser: The Missing Frontend Feedback Loop for AI Agents"
 description: "Why I switched from Chrome DevTools MCP to a simple CLI for browser automation. Less tokens, no permission prompts, and the AI can finally verify its own UI fixes."
 date: '2026-03-28'
-published: true
+published: false
 image: /blog/agent-browser-ai-automation/og.png
 ---
 

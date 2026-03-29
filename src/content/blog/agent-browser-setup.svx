@@ -1,0 +1,169 @@
+---
+title: "agent-browser: Setup Guide for Claude Code"
+description: "How to set up agent-browser with Claude Code. Install, connect to your browser, install the skill, and start using it in 5 minutes."
+date: '2026-03-28'
+published: true
+image: /blog/agent-browser-ai-automation/og.png
+---
+
+<script>
+	import ogImage from './images/agent-browser-ai-automation/og.png?format=webp';
+	import chromeRemoteDebugging from './images/agent-browser-ai-automation/chrome-remote-debugging.png?format=webp';
+	import skillsInstall from './images/agent-browser-ai-automation/skills-install.png?format=webp';
+	let lang = $state('en');
+</script>
+
+<img src={ogImage} alt="agent-browser: jigsaw puzzle with 'play with its craft' as the missing piece" />
+
+<div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+	<button onclick={() => lang = 'en'} class:active={lang === 'en'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'en' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">EN</button>
+	<button onclick={() => lang = 'th'} class:active={lang === 'th'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'th' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">TH</button>
+</div>
+
+{#if lang === 'en'}
+
+[agent-browser](https://github.com/vercel-labs/agent-browser) is a CLI that lets AI agents interact with your browser -- click, type, read elements, take screenshots. Think of it as giving Claude Code hands in the browser.
+
+If you've used Chrome DevTools MCP (30k tokens per call) or the Claude Chrome extension (permission prompts on every click), this is the lightweight alternative. ~100 tokens per snapshot instead of 30,000.
+
+## Install
+
+```bash
+npm install -g agent-browser
+```
+
+## Connect to Your Browser
+
+Two options:
+
+### Option A: Use Your Existing Chrome
+
+Open `chrome://inspect/#remote-debugging` in Chrome:
+
+<img src={chromeRemoteDebugging} alt="Chrome remote debugging settings with 'Allow remote debugging' enabled" />
+
+Check "Allow remote debugging." Now agent-browser connects to your actual browser with all your login sessions:
+
+```bash
+agent-browser --cdp-url ws://127.0.0.1:41175 snapshot -i
+```
+
+### Option B: Let agent-browser Launch One
+
+```bash
+agent-browser open http://localhost:5173
+```
+
+Launches a new browser instance. Simpler, but no existing sessions.
+
+## Install the Skill for Claude Code
+
+The skill teaches Claude Code when and how to use agent-browser. Without it, Claude doesn't know agent-browser exists.
+
+```bash
+npx skills install vercel-labs/agent-browser
+```
+
+<img src={skillsInstall} alt="Skills installer showing agent-browser skill ready to install" />
+
+Select "agent-browser" and install. Now Claude Code knows the commands.
+
+## What Claude Can Do With It
+
+You don't run these commands -- Claude does. Once the skill is installed, Claude can:
+
+- **Read the page** -- see every button, input, link, and alert as a compact text snapshot (~100 tokens)
+- **Click, type, submit** -- interact with forms, buttons, dropdowns
+- **Take screenshots** -- capture visual state for layout checks
+- **Read console/errors** -- see browser errors without you copy-pasting
+- **Run JavaScript** -- evaluate expressions, check state
+- **Manage tabs** -- open pages, switch between them
+
+## What It Looks Like
+
+You say: "The checkout form validation isn't working."
+
+Claude opens the page, submits an empty form, sees no error appears, reads the source, fixes the validator, waits for hot-reload, submits again, sees the validation error show up, and reports back: "Fixed. Required field validation was missing on email."
+
+No back-and-forth. No "can you check if it works?" Claude verified its own fix.
+
+## Links
+
+- [GitHub: vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser)
+- [Skills installer](https://github.com/nicepkg/nice-skills) -- `npx skills install vercel-labs/agent-browser`
+- Related: [Chrome DevTools MCP](https://github.com/nicepkg/nice-skills) has an experimental CLI too
+
+{:else if lang === 'th'}
+
+[agent-browser](https://github.com/vercel-labs/agent-browser) คือ CLI ที่ให้ AI agent interact กับเบราว์เซอร์ได้ -- คลิก พิมพ์ อ่าน element จับภาพหน้าจอ เหมือนให้ Claude Code มีมือในเบราว์เซอร์
+
+ถ้าเคยใช้ Chrome DevTools MCP (30k token ต่อ call) หรือ Claude Chrome extension (ขอ permission ทุกคลิก) ตัวนี้คือทางเลือกที่เบากว่า ~100 token ต่อ snapshot แทน 30,000
+
+## ติดตั้ง
+
+```bash
+npm install -g agent-browser
+```
+
+## เชื่อมต่อกับเบราว์เซอร์
+
+มี 2 วิธี:
+
+### วิธี A: ใช้ Chrome ที่เปิดอยู่
+
+เปิด `chrome://inspect/#remote-debugging` ใน Chrome:
+
+<img src={chromeRemoteDebugging} alt="หน้าตั้งค่า Chrome remote debugging เปิด 'Allow remote debugging' แล้ว" />
+
+ติ๊ก "Allow remote debugging" agent-browser เชื่อมต่อกับ Chrome จริงของคุณพร้อม login session ทั้งหมด:
+
+```bash
+agent-browser --cdp-url ws://127.0.0.1:41175 snapshot -i
+```
+
+### วิธี B: ให้ agent-browser เปิดเอง
+
+```bash
+agent-browser open http://localhost:5173
+```
+
+เปิด browser instance ใหม่ ง่ายกว่า แต่ไม่มี session เดิม
+
+## ติดตั้ง Skill สำหรับ Claude Code
+
+Skill สอนให้ Claude Code รู้ว่า agent-browser คืออะไรและใช้ยังไง ถ้าไม่ติดตั้ง Claude ไม่รู้จัก agent-browser
+
+```bash
+npx skills install vercel-labs/agent-browser
+```
+
+<img src={skillsInstall} alt="Skills installer แสดง agent-browser skill พร้อมติดตั้ง" />
+
+เลือก "agent-browser" แล้วติดตั้ง Claude Code จะรู้จักคำสั่งทั้งหมด
+
+## Claude ทำอะไรได้บ้าง
+
+คุณไม่ต้องรันคำสั่งเหล่านี้เอง -- Claude ทำให้ พอติดตั้ง skill แล้ว Claude สามารถ:
+
+- **อ่านหน้าเว็บ** -- เห็นทุกปุ่ม input ลิงก์ และ alert เป็น text snapshot (~100 token)
+- **คลิก พิมพ์ submit** -- interact กับฟอร์ม ปุ่ม dropdown
+- **จับภาพหน้าจอ** -- capture สถานะสำหรับเช็ค layout
+- **อ่าน console/error** -- เห็น browser error โดยไม่ต้อง copy-paste ให้
+- **รัน JavaScript** -- evaluate expression เช็คสถานะ
+- **จัดการ tab** -- เปิดหน้า สลับไปมา
+
+## หน้าตาเป็นยังไง
+
+คุณบอก: "Checkout form validation ไม่ทำงาน"
+
+Claude เปิดหน้าเว็บ submit ฟอร์มเปล่า เห็นว่าไม่มี error ขึ้น อ่าน source แก้ validator รอ hot-reload submit อีกครั้ง เห็น validation error ขึ้น แล้วรายงาน: "แก้แล้ว required field validation ที่ email หายไป"
+
+ไม่มี back-and-forth ไม่ต้อง "ลองเช็คให้ที" Claude verify งานของตัวเองได้
+
+## Links
+
+- [GitHub: vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser)
+- [Skills installer](https://github.com/nicepkg/nice-skills) -- `npx skills install vercel-labs/agent-browser`
+- เกี่ยวข้อง: [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) มี experimental CLI ด้วย
+
+{/if}
