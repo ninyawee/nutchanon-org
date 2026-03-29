@@ -1,6 +1,6 @@
 ---
-title: "agent-browser: Setup Guide for Claude Code"
-description: "How to set up agent-browser with Claude Code. Install, connect to your browser, install the skill, and start using it in 5 minutes."
+title: "agent-browser ชอบครับ ใช้มา 2 สัปดาห์ละ"
+description: "วิธีติดตั้ง agent-browser กับ Claude Code เชื่อมต่อเบราว์เซอร์ ติดตั้ง skill แล้วเริ่มใช้งานใน 5 นาที"
 date: '2026-03-28'
 published: true
 image: /blog/agent-browser-ai-automation/og.png
@@ -10,7 +10,7 @@ image: /blog/agent-browser-ai-automation/og.png
 	import ogImage from './images/agent-browser-ai-automation/og.png?format=webp';
 	import chromeRemoteDebugging from './images/agent-browser-ai-automation/chrome-remote-debugging.png?format=webp';
 	import skillsInstall from './images/agent-browser-ai-automation/skills-install.png?format=webp';
-	let lang = $state('en');
+	let lang = $state('th');
 </script>
 
 <img src={ogImage} alt="agent-browser: jigsaw puzzle with 'play with its craft' as the missing piece" />
