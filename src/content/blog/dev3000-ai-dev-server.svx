@@ -1,0 +1,200 @@
+---
+title: "dev3000: A Dev Server That Your AI Agent Can Actually See"
+description: "d3k wraps your dev server, launches a monitored browser, and writes everything into a single log file. Now your AI assistant has the full picture."
+date: '2026-03-28'
+published: false
+series: "Frontend AI Dev"
+---
+
+> **Frontend AI Dev** (3/5): [1. agent-browser](/blog/agent-browser-ai-automation) | [2. portless](/blog/portless-localhost-urls) | dev3000 | [4. svelte-grab](/blog/svelte-grab-component-source) | [5. The Full Stack](/blog/d3k-portless-agent-browser)
+
+Here's the gap in AI-assisted development: your AI agent can read your source code, your terminal output, and your error messages. But it can't see your app. It doesn't know that the button is overlapping the navbar, that the toast notification is stuck, or that the loading spinner never stops.
+
+**dev3000** (cli: `d3k`) bridges this gap. It wraps your dev server, launches a monitored Chrome instance, and writes everything -- server logs, browser console, network errors, screenshots -- into a single timestamped log file that AI agents can read.
+
+## Quick Start
+
+```bash
+npm install -g dev3000
+
+# Start with an AI agent in split-screen (tmux)
+d3k --with-agent claude
+
+# Or standalone, no agent
+d3k --no-agent
+```
+
+d3k auto-detects your framework (Next.js, Vite, SvelteKit, Django, Rails, etc.) and starts the appropriate dev command. Override with `-c`:
+
+```bash
+d3k --no-agent -c 'bun dev'
+```
+
+## What It Captures
+
+Once running, d3k monitors two streams and merges them into `~/.d3k/{project}/d3k.log`:
+
+**Server side:**
+- stdout/stderr from your dev server
+- Build errors, compilation warnings
+- API request logs
+
+**Browser side (via Chrome DevTools Protocol):**
+- Console messages (log, warn, error)
+- Unhandled exceptions
+- Network request failures (4xx, 5xx, timeouts)
+- Navigation events
+- Screenshots on errors and page transitions
+
+The log format is designed for AI consumption:
+
+```
+[14:23:15] [BROWSER] [ERROR] Unhandled TypeError: Cannot read properties of null
+[14:23:15] [SERVER]  [INFO]  GET /api/users 200 12ms
+[14:23:16] [BROWSER] [NETWORK] POST /api/orders -> 500 Internal Server Error
+```
+
+One file. Both sources. Timestamped. Grep-friendly.
+
+## The session.json
+
+Every d3k session writes a metadata file at `~/.d3k/{project}/session.json`:
+
+```json
+{
+  "projectName": "myapp-a1b2c3",
+  "appPort": "4782",
+  "publicUrl": "http://myapp-a1b2c3.localhost:1355",
+  "cdpUrl": "ws://localhost:9222/devtools/page/...",
+  "pid": 12345,
+  "serverPid": 12346,
+  "chromePids": [12400, 12401],
+  "preferredBrowserTool": "agent-browser"
+}
+```
+
+This is how other tools discover the running session. The project name includes a hash of the working directory (`sha256(cwd)[0:6]`), so multiple worktrees of the same project each get their own session. No cross-contamination between your `develop` branch and a feature worktree.
+
+## Diagnostic Commands
+
+These are the commands AI agents (or you) use to understand what's happening:
+
+### `d3k errors`
+
+Shows recent errors from both server and browser, with the user interactions that preceded each error:
+
+```bash
+d3k errors
+d3k errors -n 20          # last 20 errors
+d3k errors --context       # include preceding user actions
+d3k errors --all           # full session history
+```
+
+### `d3k fix`
+
+Deep analysis mode. Categorizes errors by severity, identifies patterns, and suggests fixes:
+
+```bash
+d3k fix
+d3k fix --focus build      # focus on build/compilation errors
+d3k fix --time 30          # analyze last 30 minutes
+```
+
+### `d3k crawl`
+
+Discovers all URLs in your app by navigating links:
+
+```bash
+d3k crawl
+d3k crawl --depth all      # exhaustive crawl
+```
+
+### `d3k find-component`
+
+Given a DOM selector, finds the source file that renders it:
+
+```bash
+d3k find-component "nav.header"
+d3k find-component "[data-testid='submit-btn']"
+```
+
+Uses the browser to inspect the DOM and trace back to source. Useful when an AI agent sees an element in the accessibility tree but needs to find where it's defined.
+
+## Split-Screen with tmux
+
+The flagship workflow:
+
+```bash
+d3k --with-agent claude
+```
+
+This opens a tmux session with two panes:
+- **Left**: d3k's TUI showing live server and browser logs, color-coded by type
+- **Right**: Claude Code with full access to d3k commands
+
+Claude can:
+1. Read `d3k errors` to understand failures
+2. Run `d3k find-component` to locate source files
+3. Edit code and watch d3k for hot-reload results
+4. Use `agent-browser` to interact with the monitored Chrome instance
+
+Switch between panes with `Ctrl+B` then arrow keys. `Ctrl+C` exits both.
+
+## portless Integration
+
+Add `--portless` to use named `.localhost` URLs instead of port numbers:
+
+```bash
+d3k --no-agent --portless -c 'bun dev'
+```
+
+Now your app is at `http://myapp-a1b2c3.localhost:1355` instead of `http://localhost:5173`. Each worktree gets a unique hash in the URL, preventing collisions.
+
+## The TUI
+
+d3k's terminal interface shows:
+- Live log streaming from both server and browser
+- Color-coded messages: errors in red, network in blue, navigation in green
+- Screenshot notifications in cyan
+- Responsive layout that adapts to terminal size
+
+Disable the TUI if you prefer plain output: `d3k --no-tui` or `d3k --tail` for a `tail -f` style view.
+
+## Chrome Profile Isolation
+
+Each project gets its own Chrome profile at `~/.d3k/{project}/chrome-profile/`. This means:
+- Login sessions persist between d3k restarts (for the same project)
+- Different projects have different cookies and localStorage
+- No interference with your personal Chrome
+
+## Process Management
+
+d3k tracks every process it spawns (dev server PID, Chrome PIDs) in `session.json`. On shutdown, it kills exactly what it started. No orphaned Chrome processes, no zombie dev servers.
+
+If d3k crashes, the PIDs are still in `session.json` for manual cleanup. But in practice, the signal handlers catch most cases cleanly.
+
+## File Structure
+
+```
+~/.d3k/
+  myapp-a1b2c3/
+    d3k.log              # unified timestamped log
+    session.json         # session metadata (PIDs, ports, URLs)
+    chrome-profile/      # Chrome user data
+    screenshots/         # timestamped screenshots
+    logs/                # rotated log files
+```
+
+## When to Use It
+
+d3k is most valuable when:
+- You're working with AI agents that need runtime context (not just source code)
+- You're debugging issues that only manifest in the browser (hydration errors, layout bugs, API failures)
+- You want a single log file that captures everything instead of switching between terminal and DevTools
+- You're running multiple projects/worktrees and need isolated environments
+
+It's not a replacement for your browser's DevTools. It's a bridge between your running app and your AI assistant.
+
+---
+
+> **Frontend AI Dev** (3/5): [1. agent-browser](/blog/agent-browser-ai-automation) | [2. portless](/blog/portless-localhost-urls) | dev3000 | [4. svelte-grab](/blog/svelte-grab-component-source) | [5. The Full Stack](/blog/d3k-portless-agent-browser)

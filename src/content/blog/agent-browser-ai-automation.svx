@@ -1,0 +1,334 @@
+---
+title: "agent-browser: The Missing Frontend Feedback Loop for AI Agents"
+description: "Why I switched from Chrome DevTools MCP to a simple CLI for browser automation. Less tokens, no permission prompts, and the AI can finally verify its own UI fixes."
+date: '2026-03-28'
+published: true
+image: /blog/agent-browser-ai-automation/og.png
+---
+
+<script>
+	import ogImage from './images/agent-browser-ai-automation/og.png?format=webp';
+	import chromeRemoteDebugging from './images/agent-browser-ai-automation/chrome-remote-debugging.png?format=webp';
+	import chromeDevtoolsMcp from './images/agent-browser-ai-automation/chrome-devtools-mcp.png?format=webp';
+	let lang = $state('en');
+</script>
+
+<img src={ogImage} alt="agent-browser: jigsaw puzzle with 'play with its craft' as the missing piece" />
+
+<div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+	<button onclick={() => lang = 'en'} class:active={lang === 'en'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'en' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">EN</button>
+	<button onclick={() => lang = 'th'} class:active={lang === 'th'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'th' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">TH</button>
+</div>
+
+{#if lang === 'en'}
+
+Your AI agent just refactored your checkout form. Clean diff. Confident commit message. You open the browser. The submit button is gone.
+
+The agent never looked. It read code, edited code, declared victory -- but never opened a browser to check. This is how you get AI slop: competent code generation with zero verification. The agent can't click its own button.
+
+"Just write E2E tests." Sure -- tests catch functional regressions. But frontend isn't just functionality. It's interaction and aesthetics. The save button that ended up below the fold. The form labels that shifted left after a grid change. The modal that opens behind the overlay. These are common-sense mistakes any human would catch in two seconds by looking at the screen. No test suite covers "the layout looks wrong." The agent needs to *see* the page, not just assert against it.
+
+The missing piece isn't smarter generation. It's the ability to play with the result before shipping it.
+
+```bash
+agent-browser snapshot -i
+```
+
+```
+@e1 button "Submit Order"
+@e2 input "Email" value=""
+@e3 alert "Payment failed: card declined"
+```
+
+~100 tokens. The full interactive state of a page. The AI reads this, clicks `@e1`, fills `@e2`, checks the result. No human alt-tabbing to Chrome. No "does it work now?" after every code change.
+
+This is the tool that closed the loop.
+
+## What I Tried Before
+
+### Chrome DevTools MCP: 30,000 Tokens Per Call
+
+My first attempt. Connect Claude to Chrome's debugging protocol via MCP. In theory, the AI gets full browser access.
+
+In practice, I kept turning it off. Even after disabling audits, a single tool call consumed **30,000+ tokens**. DOM snapshots, computed styles, network waterfall -- it dumps everything. My context window filled with Chrome internals instead of the actual bug.
+
+### Claude Chrome Extension: Permission Prompts on Localhost
+
+The Claude browser extension is more conservative with tokens. Good. But it asks permission to interact with `localhost:5173`. My dev server. On my machine.
+
+Every click: "Allow Claude to interact with this page?" Every form fill: same prompt. A tool that's supposed to automate the verify step shouldn't require manual approval on every action.
+
+## Why CLIs Beat MCP for This
+
+I've been replacing MCP servers with CLIs across the board. `gws` replaced the Google Workspace MCP. agent-browser replaced Chrome DevTools MCP. Same capabilities, fraction of the tokens. Here's why the pattern works:
+
+**MCP loads its entire manual upfront.** Every conversation starts with thousands of tokens of tool schemas -- whether you use those tools or not. A CLI's manual is `--help`, fetched on demand for a few hundred tokens.
+
+**Human-centric CLIs are AI-guessable.** `agent-browser click @e1` follows conventions the model has seen millions of times in training data. If it guesses wrong, the error message points to the right command. MCP tools return opaque "invalid parameters" errors.
+
+**CLIs compose.** Pipe, redirect, chain with `&&`, wrap in scripts. MCP tools are isolated function calls. You can't `agent-browser snapshot -i | grep alert` with an MCP server.
+
+**CLIs converge with training data.** Flag patterns, subcommands, positional args -- these are massively represented in the model's training set. MCP schemas are novel per-server. In the future, popular CLIs will be part of model training directly. No manual needed.
+
+## agent-browser in Practice
+
+```bash
+npm install -g agent-browser
+```
+
+Four commands cover 90% of use:
+
+```bash
+agent-browser snapshot -i           # read the page (interactive elements)
+agent-browser click @e4             # click by reference
+agent-browser fill @e2 "hello"      # type into an input
+agent-browser screenshot /tmp/s.png # visual capture
+```
+
+The snapshot returns an accessibility tree, not a DOM dump:
+
+```
+@e1 navigation "Main Menu"
+@e2 link "Dashboard"
+@e3 button "Submit Order"
+@e4 input "Email" value="user@example.com"
+@e5 alert "Payment failed: card declined"
+```
+
+The `@e1` references are stable within a page state. The AI uses them directly in the next command. No CSS selectors to construct, no XPath to guess.
+
+## Connect to Your Own Browser
+
+You don't need a headless browser. Open `chrome://inspect/#remote-debugging`:
+
+<img src={chromeRemoteDebugging} alt="Chrome remote debugging settings page with 'Allow remote debugging' enabled and server running at 127.0.0.1:41175" />
+
+Check the box. Now agent-browser connects to **your actual Chrome** -- login sessions, cookies, dev data, everything:
+
+```bash
+agent-browser --cdp-url ws://127.0.0.1:41175 snapshot -i
+```
+
+You watch the AI click buttons in the same browser you're looking at. No separate profile, no re-authentication.
+
+## What a Feedback Loop Actually Looks Like
+
+Without agent-browser, the AI is blind after the edit:
+
+```
+You: "Checkout validation is broken"
+Claude: *reads source, fixes validator*
+Claude: "I've fixed it. Can you check if it works?"
+You: *opens browser, fills form, submits*
+You: "Still broken, the error message doesn't show"
+Claude: *reads source again, tries another fix*
+Claude: "Try now?"
+```
+
+With agent-browser:
+
+```
+You: "Checkout validation is broken"
+Claude: *opens page, submits empty form, sees no error*
+Claude: *reads source, fixes validator*
+Claude: *submits empty form again, sees error appear*
+Claude: "Fixed. Required field validation was missing on email."
+```
+
+The second version has zero back-and-forth. The AI verified its own fix.
+
+## The Landscape
+
+I've tried Playwright CLI (too verbose for interactive use -- a full script to check if a button exists), BrowserUse (Python, heavier setup), and I'm watching Google build their own.
+
+The `chrome-devtools-mcp` repo now ships an experimental CLI alongside the MCP server:
+
+<img src={chromeDevtoolsMcp} alt="ChromeDevTools/chrome-devtools-mcp GitHub repo showing chrome-devtools-cli skill alongside the MCP tools" />
+
+Google's own team is building a CLI *next to* their MCP server. The direction is clear.
+
+## The Tradeoff: Accessibility Trees vs. Screenshots
+
+Snapshots are semantic. The AI sees "button Submit Order", not "blue rectangle at (450, 320)." It can act on that directly.
+
+What you lose: visual layout. The AI can't tell if two elements overlap or if spacing is wrong. For layout bugs, use `agent-browser screenshot`. For everything else -- form behavior, navigation flow, error states, data display -- the accessibility tree is faster and more precise.
+
+## Commands Reference
+
+```bash
+# Read
+agent-browser snapshot -i              # interactive elements (~100 tokens)
+agent-browser snapshot -i -c           # compact mode (even fewer)
+agent-browser get text @e6             # extract specific text
+agent-browser console                  # browser console output
+agent-browser errors                   # browser errors only
+
+# Act
+agent-browser open <url>
+agent-browser click @e4
+agent-browser fill @e5 "hello"
+agent-browser keyboard "Enter"
+agent-browser select @e7 "option-2"
+agent-browser scroll down 500
+
+# Capture
+agent-browser screenshot /tmp/state.png
+agent-browser screenshot --full-page /tmp/full.png
+
+# Inspect
+agent-browser cookies
+agent-browser storage
+agent-browser eval "document.title"
+agent-browser tab list
+```
+
+100 tokens to read a page. One command to act on it. The feedback loop that frontend AI development was missing.
+
+{:else if lang === 'th'}
+
+AI agent เพิ่งรีแฟคเตอร์ฟอร์ม checkout ให้คุณ diff สะอาด commit message มั่นใจ คุณเปิดเบราว์เซอร์ขึ้นมา ปุ่ม submit หายไป
+
+agent ไม่เคยดูเลย มันอ่านโค้ด แก้โค้ด ประกาศชัยชนะ -- แต่ไม่เคยเปิดเบราว์เซอร์เช็ค นี่คือที่มาของ AI slop: generate โค้ดเก่ง แต่ไม่เคย verify สักครั้ง มันกดปุ่มของตัวเองไม่ได้
+
+"ก็เขียน E2E test สิ" ได้ -- test จับ functional regression ได้ แต่ frontend ไม่ใช่แค่ functionality มันคือ interaction กับ aesthetics ด้วย ปุ่ม save ที่หลุดไปอยู่ใต้ fold label ฟอร์มที่เลื่อนไปทางซ้ายหลังเปลี่ยน grid modal ที่เปิดทับ overlay ไม่มี test suite ไหนจับ "layout ดูผิด" ได้ agent ต้อง *เห็น* หน้าเว็บ ไม่ใช่แค่ assert
+
+สิ่งที่ขาดไปไม่ใช่การ generate ที่ฉลาดขึ้น แต่คือความสามารถในการเล่นกับสิ่งที่สร้างก่อนจะ ship
+
+```bash
+agent-browser snapshot -i
+```
+
+```
+@e1 button "Submit Order"
+@e2 input "Email" value=""
+@e3 alert "Payment failed: card declined"
+```
+
+~100 token สำหรับสถานะทั้งหน้า AI อ่าน คลิก `@e1` กรอก `@e2` เช็คผลลัพธ์ ไม่ต้อง alt-tab ไป Chrome ไม่ต้อง "ใช้ได้ยัง?" หลังแก้โค้ดทุกครั้ง
+
+นี่คือ tool ที่ปิด loop ได้
+
+## สิ่งที่ลองมาก่อน
+
+### Chrome DevTools MCP: 30,000+ Token ต่อ call
+
+tool call เดียวกิน **30,000+ token** DOM snapshot, computed styles, network waterfall ทุกอย่างถูก dump มา context window เต็มไปด้วย Chrome internals แทนที่จะเป็นบั๊กจริงๆ สุดท้ายปิดทิ้งตลอด
+
+### Claude Chrome Extension: ขอ permission บน localhost
+
+ประหยัด token กว่า แต่ขอ permission ทุกครั้งที่จะ interact กับ `localhost:5173` dev server ของเราเอง บนเครื่องเราเอง ทุกคลิก ทุกการกรอกฟอร์ม -- "Allow Claude to interact with this page?"
+
+## ทำไม CLI ถึงชนะ MCP
+
+ผมเปลี่ยนจาก MCP server มาใช้ CLI หมดแล้ว `gws` แทน Google Workspace MCP, agent-browser แทน Chrome DevTools MCP ความสามารถเท่ากัน token น้อยกว่าหลายเท่า
+
+- **MCP โหลดคู่มือทั้งเล่มตั้งแต่เริ่ม** -- tool schema หลายพัน token ทุกบทสนทนา ใช้หรือไม่ใช้ก็โหลด CLI ใช้ `--help` ดึงมาเฉพาะตอนที่ต้องการ
+- **CLI ที่ออกแบบมาเพื่อคน AI เดาได้** -- `agent-browser click @e1` ตรงกับ pattern ที่ model เห็นมาหลายล้านครั้งใน training data เดาผิดก็มี error message บอก MCP ได้แค่ "invalid parameters"
+- **CLI compose ได้** -- pipe, redirect, chain ด้วย `&&` MCP เป็น function call แบบแยกส่วน
+- **CLI จะกลายเป็น training data** -- ในอนาคต CLI ยอดนิยมจะถูก train เข้าไปใน model โดยตรง ไม่ต้องมีคู่มือ
+
+## agent-browser ในทางปฏิบัติ
+
+```bash
+npm install -g agent-browser
+```
+
+4 คำสั่งครอบคลุม 90% ของการใช้งาน:
+
+```bash
+agent-browser snapshot -i           # อ่านหน้าเว็บ (element ที่ interact ได้)
+agent-browser click @e4             # คลิกตาม reference
+agent-browser fill @e2 "hello"      # พิมพ์ใส่ input
+agent-browser screenshot /tmp/s.png # จับภาพหน้าจอ
+```
+
+snapshot คืน accessibility tree ไม่ใช่ DOM dump `@e1` reference ใช้ได้ทันทีในคำสั่งถัดไป ไม่ต้องเขียน CSS selector ไม่ต้องเดา XPath
+
+## เชื่อมต่อกับ Chrome ที่ใช้อยู่
+
+ไม่ต้องเปิด headless browser เปิด `chrome://inspect/#remote-debugging`:
+
+<img src={chromeRemoteDebugging} alt="หน้าตั้งค่า Chrome remote debugging เปิด 'Allow remote debugging' แล้ว server ทำงานที่ 127.0.0.1:41175" />
+
+ติ๊กช่อง agent-browser เชื่อมต่อกับ **Chrome ตัวจริง** ของคุณ -- login session, cookies, dev data ทุกอย่าง:
+
+```bash
+agent-browser --cdp-url ws://127.0.0.1:41175 snapshot -i
+```
+
+ดู AI คลิกปุ่มในเบราว์เซอร์เดียวกับที่คุณกำลังดูอยู่ ไม่ต้องแยก profile ไม่ต้อง login ใหม่
+
+## Feedback loop จริงๆ หน้าตาเป็นยังไง
+
+**ไม่มี agent-browser:**
+
+```
+คุณ: "Checkout validation พัง"
+Claude: *อ่าน source แก้ validator*
+Claude: "แก้แล้ว ลองเช็คให้ที"
+คุณ: *เปิดเบราว์เซอร์ กรอกฟอร์ม submit*
+คุณ: "ยังพัง error message ไม่ขึ้น"
+Claude: *อ่าน source ใหม่ แก้อีกรอบ*
+Claude: "ลองอีกที?"
+```
+
+**มี agent-browser:**
+
+```
+คุณ: "Checkout validation พัง"
+Claude: *เปิดหน้าเว็บ submit ฟอร์มเปล่า เห็นว่าไม่มี error*
+Claude: *อ่าน source แก้ validator*
+Claude: *submit อีกครั้ง เห็น error ขึ้น*
+Claude: "แก้แล้ว required field validation ที่ email หายไป"
+```
+
+ไม่มี back-and-forth AI verify งานของตัวเองได้
+
+## ภูมิทัศน์ตอนนี้
+
+ลองมาแล้ว Playwright CLI (verbose เกินไป), BrowserUse (Python, setup หนัก) และกำลังจับตา Google ที่กำลังสร้างของตัวเอง
+
+`chrome-devtools-mcp` repo ตอนนี้มี CLI ทดลองพร้อมกับ MCP server:
+
+<img src={chromeDevtoolsMcp} alt="ChromeDevTools/chrome-devtools-mcp GitHub repo แสดง chrome-devtools-cli skill" />
+
+ทีมของ Google เองกำลังสร้าง CLI *คู่กับ* MCP server ทิศทางชัดเจน
+
+## Tradeoff: Accessibility Trees vs. Screenshots
+
+Snapshot เป็น semantic AI เห็น "button Submit Order" ไม่ใช่ "สี่เหลี่ยมสีน้ำเงินที่ (450, 320)" สั่งต่อได้ทันที
+
+สิ่งที่เสียไป: visual layout AI บอกไม่ได้ว่าสอง element ซ้อนกันหรือ spacing ผิด สำหรับ layout bug ใช้ `agent-browser screenshot` นอกจากนั้น -- form behavior, navigation flow, error states -- accessibility tree เร็วกว่าและแม่นกว่า
+
+## Commands Reference
+
+```bash
+# อ่าน
+agent-browser snapshot -i              # element ที่ interact ได้ (~100 tokens)
+agent-browser snapshot -i -c           # compact mode (น้อยกว่าอีก)
+agent-browser get text @e6             # ดึงข้อความเฉพาะจุด
+agent-browser console                  # console output ของเบราว์เซอร์
+agent-browser errors                   # error เท่านั้น
+
+# สั่ง
+agent-browser open <url>
+agent-browser click @e4
+agent-browser fill @e5 "hello"
+agent-browser keyboard "Enter"
+agent-browser select @e7 "option-2"
+agent-browser scroll down 500
+
+# จับภาพ
+agent-browser screenshot /tmp/state.png
+agent-browser screenshot --full-page /tmp/full.png
+
+# ตรวจสอบ
+agent-browser cookies
+agent-browser storage
+agent-browser eval "document.title"
+agent-browser tab list
+```
+
+100 token อ่านหน้าเว็บ 1 คำสั่งสั่งงาน feedback loop ที่ frontend AI dev ขาดมาตลอด
+
+{/if}

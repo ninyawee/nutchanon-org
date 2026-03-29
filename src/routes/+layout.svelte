@@ -26,7 +26,12 @@
 	</main>
 
 	<footer>
-		<p>&copy; {new Date().getFullYear()} Nutchanon. All rights reserved.</p>
+		<p>
+			&copy; {new Date().getFullYear()} Nutchanon. All rights reserved.
+			<a href="https://webring.wonderful.software#nutchanon.org" title="วงแหวนเว็บ" class="webring">
+				<img alt="วงแหวนเว็บ" width="20" height="20" src="https://webring.wonderful.software/webring.white.svg" />
+			</a>
+		</p>
 	</footer>
 </div>
 

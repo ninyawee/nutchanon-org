@@ -1,0 +1,143 @@
+---
+title: "svelte-grab: Alt+Click Any Element to Get Its Source File"
+description: "Skip the grep. Alt+Click a component in the browser, get the file path and line number. Then paste it to your AI agent."
+date: '2026-03-28'
+published: false
+series: "Frontend AI Dev"
+---
+
+> **Frontend AI Dev** (4/5): [1. agent-browser](/blog/agent-browser-ai-automation) | [2. portless](/blog/portless-localhost-urls) | [3. dev3000](/blog/dev3000-ai-dev-server) | svelte-grab | [5. The Full Stack](/blog/d3k-portless-agent-browser)
+
+Alt+Click a button in your browser. This lands in your clipboard:
+
+```
+<button class="btn-primary">Submit</button>
+in src/lib/components/checkout/SubmitButton.svelte:23
+  parent: src/routes/checkout/+page.svelte:47
+```
+
+That's svelte-grab. You paste this into Claude Code, and the AI jumps directly to line 23 of the right file. No `grep`, no `glob`, no "which component renders this button?" back-and-forth.
+
+## The Problem It Solves
+
+"Make the header button bigger."
+
+Without svelte-grab, the AI has to search for it. `grep "header"` returns 47 matches across layouts, components, and test files. The AI opens 3-4 files before finding the right one. Sometimes it edits the wrong component entirely.
+
+With svelte-grab: you Alt+Click the button, paste the result, the AI is already editing `src/lib/components/Header.svelte:31`. Three seconds.
+
+react-grab ([aidenybai/react-grab](https://github.com/aidenybai/react-grab)) pioneered this pattern for React. svelte-grab ([HeiCg/svelte-grab](https://github.com/HeiCg/svelte-grab)) brings it to Svelte 5 with additional modes for state, styles, and accessibility.
+
+## Setup
+
+```bash
+npm install -D svelte-grab
+```
+
+Add to your root layout:
+
+```svelte
+<script>
+  import { SvelteGrab } from 'svelte-grab';
+</script>
+
+<SvelteGrab />
+```
+
+It auto-disables in production. No code splitting needed.
+
+## The Shortcuts
+
+Different Alt+Click combos grab different context:
+
+| Shortcut | What You Get |
+|----------|-------------|
+| Alt+Click | Component file path + line number + parent chain |
+| Alt+Shift+Click | Component state (props, bound values) |
+| Alt+Ctrl+Click | CSS source attribution (which file styles this element) |
+
+Each copies to clipboard in a format optimized for pasting into an AI agent.
+
+## Why This Matters for AI Agents
+
+The hardest part of AI-assisted frontend work isn't writing code. It's finding the right file. A typical SvelteKit app has hundreds of components spread across `src/lib/components/`, `src/routes/`, shared layouts, and UI library wrappers. The AI spends more tokens searching than editing.
+
+svelte-grab eliminates the search phase entirely:
+
+1. You see the thing you want changed in the browser
+2. You Alt+Click it
+3. You paste the location into the agent
+4. The agent opens the exact file at the exact line
+
+No ambiguity. No wasted context on `grep` results. The AI's first edit is on the right file.
+
+## Agent Output Format
+
+svelte-grab outputs in a format that AI agents parse naturally:
+
+```
+<div class="card shadow-md p-4">
+  <h3>Order Summary</h3>
+  ...
+</div>
+in src/lib/components/OrderSummary.svelte:12
+  parent: src/routes/checkout/+page.svelte:34
+  parent: src/routes/+layout.svelte:8
+```
+
+The full component stack. The AI sees not just which file, but where in the component tree this element lives. When a layout component wraps a page component wraps a reusable component, knowing the chain matters for deciding where to make the change.
+
+## State Inspection
+
+Alt+Shift+Click grabs the component's reactive state:
+
+```
+OrderSummary.svelte
+  items: [{name: "Widget", qty: 2, price: 599}]
+  total: 1198
+  currency: "THB"
+```
+
+The AI sees the data flowing into the component. When you say "the total is wrong," the agent immediately knows the `total` is 1198 and can trace the calculation logic.
+
+## How It Works Under the Hood
+
+Svelte's compiler attaches `__svelte_meta` to DOM elements in dev mode. This metadata contains:
+- `loc.file` -- source file path
+- `loc.line`, `loc.column` -- exact position
+- Parent component references
+
+svelte-grab walks up the DOM tree, reading this metadata at each level to build the full component hierarchy. No source maps, no build tool plugins. The framework provides the data natively.
+
+This is why it's dev-only. Production builds strip `__svelte_meta`. Zero runtime cost.
+
+## WebSocket Relay to Claude Code
+
+For a tighter integration, svelte-grab supports a WebSocket relay that sends grabbed context directly to your AI agent:
+
+```bash
+npx svelte-grab relay
+```
+
+Now every Alt+Click sends the component info to Claude Code in real time. No clipboard, no paste. The AI receives the context as it happens.
+
+## Compared to d3k find-component
+
+dev3000 has a similar command: `d3k find-component "nav.header"`. The difference:
+
+- **d3k find-component**: AI-initiated. The agent describes what it's looking for using a CSS selector. Works when the AI already knows which element to target.
+- **svelte-grab**: Human-initiated. You point at the thing. Works when *you* know what you want changed but can't describe it precisely to the agent.
+
+They complement each other. svelte-grab for "change this thing I'm looking at." d3k for "find the component that renders the error toast."
+
+## The react-grab Origin
+
+[react-grab](https://github.com/aidenybai/react-grab) by Aiden Bai introduced this pattern. Press Ctrl+C / Cmd+C while hovering any React element to copy its file location, component name, and HTML. The React version uses React's internal DevTools metadata to trace elements back to source.
+
+svelte-grab adapts the concept for Svelte 5, adding multi-mode shortcuts (state, styles, accessibility) and the WebSocket relay for agent integration.
+
+The idea is simple and framework-agnostic in principle: dev compilers know where every element came from. Expose that information in a way that's useful for humans and AI agents. Skip the search.
+
+---
+
+> **Frontend AI Dev** (4/5): [1. agent-browser](/blog/agent-browser-ai-automation) | [2. portless](/blog/portless-localhost-urls) | [3. dev3000](/blog/dev3000-ai-dev-server) | svelte-grab | [5. The Full Stack](/blog/d3k-portless-agent-browser)

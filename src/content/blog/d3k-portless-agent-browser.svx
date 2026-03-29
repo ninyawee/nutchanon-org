@@ -1,0 +1,296 @@
+---
+title: "The Agentic Dev Server Stack: dev3000, portless, and agent-browser"
+description: "Three tools from Vercel Labs that turn your local dev environment into an AI-native workspace. Here's how they work individually and in harmony."
+date: '2026-03-28'
+published: false
+series: "Frontend AI Dev"
+---
+
+> **Frontend AI Dev** (5/5): [1. agent-browser](/blog/agent-browser-ai-automation) | [2. portless](/blog/portless-localhost-urls) | [3. dev3000](/blog/dev3000-ai-dev-server) | [4. svelte-grab](/blog/svelte-grab-component-source) | The Full Stack
+
+I've been running multiple SvelteKit apps across git worktrees with AI agents debugging them in real time. No port conflicts, no memorizing `localhost:5174` vs `localhost:5175`, and the AI can actually see what's on screen. The stack that makes this work: **dev3000**, **portless**, and **agent-browser**.
+
+These three tools are all from Vercel Labs. Each solves a distinct problem, but together they form a complete agentic development environment.
+
+## The Problem
+
+Traditional local development has friction that compounds when you add AI agents:
+
+1. **Port conflicts** -- Run two worktrees of the same project and you get `EADDRINUSE`. Storybook on 6006, dev server on 5173, another on 5174... it's a mess.
+2. **AI agents are blind** -- Claude Code can read your terminal output and source files, but it can't see what your app actually looks like in the browser. It can't click buttons or read error toasts.
+3. **Context is scattered** -- Server logs in one terminal, browser console in another, network errors in DevTools. When you paste a stack trace to your AI assistant, you're giving it 10% of the picture.
+
+## Tool 1: portless -- Stable URLs, Zero Port Management
+
+**What it does**: Replaces `localhost:<port>` with named `.localhost` URLs via a local proxy.
+
+Install globally (not per-project):
+
+```bash
+npm install -g portless
+portless proxy start
+```
+
+Now instead of:
+
+```bash
+vite dev --port 5174  # hope nothing else is on 5174
+```
+
+You run:
+
+```bash
+portless run vite dev
+# -> http://admin-panel.localhost:1355
+```
+
+Portless assigns a random ephemeral port (4000-4999), injects it as `PORT` env var, and routes `admin-panel.localhost:1355` to that port through its proxy. The name is inferred from `package.json`.
+
+### Why This Matters for Worktrees
+
+The killer feature: **git worktree detection**. Portless checks if you're in a linked worktree and prepends the branch name as a subdomain:
+
+| Worktree | Branch | URL |
+|----------|--------|-----|
+| Main repo | `develop` | `http://my-storybook.localhost:1355` |
+| Linked worktree | `feat/chat-redesign` | `http://chat-redesign.my-storybook.localhost:1355` |
+
+Same `package.json` script, zero configuration changes. Each worktree gets its own URL, its own port, its own browser storage.
+
+In practice, this is what the `package.json` script looks like:
+
+```json
+{
+  "storybook": "portless run --name my-storybook sh -c 'exec storybook dev -p $PORT'"
+}
+```
+
+Storybook doesn't read `PORT` by default, so we wrap it in `sh -c` to expand the variable into the `-p` flag. Other frameworks like Next.js or Vite pick up `PORT` natively.
+
+### Cross-Service References
+
+Building a frontend that calls a backend? Use `portless get` to resolve URLs at startup:
+
+```bash
+BACKEND_URL=$(portless get api) vite dev
+```
+
+No hardcoded ports. If the backend moves to a different port (because another worktree grabbed it first), the URL stays stable.
+
+## Tool 2: dev3000 (d3k) -- AI-Readable Dev Server
+
+**What it does**: Wraps your dev server, launches a monitored Chrome instance, and writes everything (server logs, browser console, network errors, screenshots) into a single timestamped log file that AI agents can read.
+
+```bash
+d3k --no-agent --portless -c 'bun dev'
+```
+
+This single command:
+1. Starts your dev server with an auto-assigned port (via portless)
+2. Launches Chrome with a dedicated profile
+3. Connects via Chrome DevTools Protocol (CDP)
+4. Captures server logs, browser console, network requests, and screenshots into `~/.d3k/{project}/d3k.log`
+5. Writes a `session.json` with metadata for other tools to discover
+
+### The session.json
+
+This file is the glue that connects everything:
+
+```json
+{
+  "projectName": "myapp-a1b2c3",
+  "appPort": "5174",
+  "publicUrl": "http://myapp-a1b2c3.localhost:1355",
+  "cdpUrl": "ws://localhost:9223/devtools/page/...",
+  "pid": 12345,
+  "serverPid": 12346,
+  "chromePids": [12400, 12401, ...],
+  "preferredBrowserTool": "agent-browser"
+}
+```
+
+The project name includes a hash of the working directory (`sha256(cwd)[0:6]`), so each worktree gets its own d3k session, its own Chrome profile, its own log file. No cross-contamination.
+
+### Diagnostic Commands
+
+When something breaks, instead of copy-pasting stack traces, you point the AI at d3k's commands:
+
+- `d3k errors` -- Recent errors from both server and browser, with user interactions that preceded them
+- `d3k fix` -- Deep analysis with categorized errors and fix recommendations
+- `d3k crawl` -- Discover all URLs in your app by crawling
+- `d3k find-component "nav.header"` -- Find the source file for a DOM element
+
+### Split-Screen with tmux
+
+For the full experience:
+
+```bash
+d3k --with-agent claude
+```
+
+This opens a tmux split: d3k's TUI on one side showing live logs, Claude Code on the other. Claude can read the d3k log, run `d3k errors`, and interact with the browser -- all in one terminal.
+
+## Tool 3: agent-browser -- Browser Hands for AI
+
+**What it does**: A Rust-based CLI that gives AI agents the ability to interact with a browser via Chrome DevTools Protocol. Click buttons, fill forms, read the screen, take screenshots.
+
+The key insight: AI agents don't work with pixels, they work with **accessibility trees**. agent-browser's `snapshot` command returns an AI-optimized representation:
+
+```bash
+agent-browser snapshot -i
+```
+
+Returns something like:
+
+```
+@e1 button "Submit Order"
+@e2 input "Email" value="user@example.com"
+@e3 link "Back to Dashboard"
+@e4 alert "Payment failed: card declined"
+```
+
+The `@e1`, `@e2` references are compact identifiers the AI can use in follow-up commands:
+
+```bash
+agent-browser fill @e2 "new@email.com"
+agent-browser click @e1
+agent-browser screenshot /tmp/after-submit.png
+```
+
+### How It Connects to d3k
+
+d3k launches Chrome and writes the CDP URL to `session.json`. agent-browser reads that URL and connects to the same browser instance. The AI agent isn't launching a new browser -- it's controlling the one that's already running your app, with all your dev data and login state.
+
+## How They Work Together
+
+Here's the full architecture:
+
+```
+portless proxy (port 1355)
+  |
+  |-- myapp-a1b2c3.localhost  ->  localhost:5174
+  |-- chat-redesign.myapp.localhost  ->  localhost:4782
+  |-- my-storybook.localhost  ->  localhost:4521
+  |
+  v
+d3k (per project)
+  |-- Starts dev server (random port via portless)
+  |-- Launches Chrome (CDP port 9222+)
+  |-- Writes session.json + d3k.log
+  |
+  v
+agent-browser
+  |-- Reads session.json for CDP URL
+  |-- Controls Chrome (click, fill, screenshot)
+  |-- Returns accessibility snapshots to AI
+  |
+  v
+AI Agent (Claude Code, Cursor, etc.)
+  |-- Reads d3k.log for context
+  |-- Runs d3k errors / d3k fix for diagnostics
+  |-- Uses agent-browser for visual verification
+  |-- Edits code, watches d3k for results
+```
+
+### A Real Debugging Session
+
+Here's what an actual agentic debugging flow looks like:
+
+1. You report: "the chat sidebar doesn't show unread counts"
+2. Claude reads `d3k errors` -- no errors, the bug is silent
+3. Claude runs `agent-browser snapshot -i` on the chat page -- sees the sidebar elements but no count badges
+4. Claude greps the source, finds the query that should return unread counts
+5. Claude fixes the query, saves the file
+6. Vite hot-reloads, d3k captures the page update
+7. Claude runs `agent-browser snapshot -i` again -- confirms badges are now visible
+8. Done. The AI verified its own fix visually.
+
+Without this stack, step 2-3 and step 7 don't exist. The AI is flying blind.
+
+## Practical Setup: Storybook Example
+
+Here's how we set up Storybook to work with portless across worktrees.
+
+In `package.json`:
+
+```json
+{
+  "storybook": "portless run --name my-storybook sh -c 'exec storybook dev -p $PORT'"
+}
+```
+
+The `portless run` command:
+1. Detects the git worktree (if any) and prepends the branch name
+2. Assigns a random port, sets `PORT` env var
+3. Registers the route with the proxy
+4. Runs storybook on the assigned port
+
+Result: every worktree gets its own Storybook URL. No port conflicts. The mise task just calls `bun run storybook` and everything works.
+
+## Practical Setup: Playwright E2E Tests
+
+We made Playwright auto-discover the d3k URL so tests run against the portless proxy URL -- not a hardcoded `localhost:5174`:
+
+```typescript
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { defineConfig } from '@playwright/test';
+
+function getD3kUrl(): string | undefined {
+  const cwd = process.cwd();
+  const pkg = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf-8'));
+  const hash = createHash('sha256').update(cwd).digest('hex').substring(0, 6);
+  const projectName = `${pkg.name}-${hash}`;
+  const sessionPath = join(
+    process.env.HOME ?? '', '.d3k', projectName, 'session.json'
+  );
+  if (!existsSync(sessionPath)) return undefined;
+  try {
+    const session = JSON.parse(readFileSync(sessionPath, 'utf-8'));
+    if (session.pid) {
+      process.kill(session.pid, 0); // throws if not running
+      return session.publicUrl;
+    }
+  } catch {
+    // pid not running or parse error
+  }
+  return undefined;
+}
+
+const d3kUrl = getD3kUrl();
+const baseURL = d3kUrl || 'http://localhost:5173';
+
+export default defineConfig({
+  webServer: d3kUrl
+    ? undefined  // d3k is already running, skip server launch
+    : { command: 'mise run dev', port: 5173, reuseExistingServer: true },
+  use: { baseURL }
+});
+```
+
+The config replicates d3k's project name derivation (`package.json name` + `sha256(cwd)[0:6]`) to find the right `session.json`. If d3k is running, it uses the `publicUrl` directly. If not, it falls back to launching the dev server.
+
+This means:
+- `mise run dev` + `bun x playwright test` -- uses d3k's portless URL
+- `bun x playwright test` alone -- starts its own dev server as fallback
+- Different worktrees find their own d3k sessions automatically
+
+## The Bigger Picture
+
+These tools represent a shift in how we think about local development. The dev server isn't just for the developer anymore -- it's a shared workspace between human and AI.
+
+The traditional dev loop: write code, switch to browser, check, switch back, fix, repeat.
+
+The agentic dev loop: describe what you want, the AI writes code, the AI checks the browser, the AI fixes issues, you review the result.
+
+For that second loop to work, the AI needs:
+- **Stable URLs** that don't break across sessions (portless)
+- **Full runtime context** -- not just source code, but logs, errors, network state (d3k)
+- **Browser interaction** -- the ability to see and click, not just read code (agent-browser)
+
+Each tool is useful on its own. Together, they're the infrastructure layer for agentic development.
+
+---
+
+> **Frontend AI Dev** (5/5): [1. agent-browser](/blog/agent-browser-ai-automation) | [2. portless](/blog/portless-localhost-urls) | [3. dev3000](/blog/dev3000-ai-dev-server) | [4. svelte-grab](/blog/svelte-grab-component-source) | The Full Stack

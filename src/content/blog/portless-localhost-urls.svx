@@ -1,0 +1,165 @@
+---
+title: "portless: Stop Memorizing Port Numbers"
+description: "A local proxy that gives every dev server a stable .localhost URL. No more port conflicts, no more localhost:3000 vs localhost:3001."
+date: '2026-03-28'
+published: false
+series: "Frontend AI Dev"
+---
+
+> **Frontend AI Dev** (2/5): [1. agent-browser](/blog/agent-browser-ai-automation) | portless | [3. dev3000](/blog/dev3000-ai-dev-server) | [4. svelte-grab](/blog/svelte-grab-component-source) | [5. The Full Stack](/blog/d3k-portless-agent-browser)
+
+Every developer has done this: start a project, it grabs port 3000. Start another, port 3001. Storybook on 6006. Docs server on 4000. Switch to a git worktree and now everything collides.
+
+**portless** fixes this with one idea: named `.localhost` URLs instead of port numbers.
+
+```bash
+npm install -g portless
+portless proxy start
+```
+
+## How It Works
+
+Instead of telling your dev server which port to use:
+
+```bash
+vite dev --port 5174  # pray nothing else is on 5174
+```
+
+Let portless handle it:
+
+```bash
+portless run vite dev
+# -> http://myapp.localhost:1355
+```
+
+What happens under the hood:
+1. Portless picks a random port (4000-4999 range)
+2. Sets `PORT`, `HOST`, and `PORTLESS_URL` environment variables
+3. Runs your command with those variables injected
+4. Registers a route: `myapp.localhost:1355` -> `localhost:4782`
+
+The name `myapp` is inferred from your `package.json` name field. You can override it:
+
+```bash
+portless run --name my-dashboard vite dev
+# -> http://my-dashboard.localhost:1355
+```
+
+## Framework Compatibility
+
+Some frameworks read `PORT` natively. Others don't. Portless handles both:
+
+**Reads PORT automatically**: Next.js, Express, Nuxt, Fastify, Hono
+
+**Needs the flag**: Storybook, Angular. Wrap with `sh -c` to expand:
+
+```json
+{
+  "storybook": "portless run --name my-storybook sh -c 'exec storybook dev -p $PORT'"
+}
+```
+
+**Vite**: Portless auto-injects `--port` and `--host` flags for Vite, so `portless run vite dev` just works.
+
+## Git Worktree Support
+
+This is the feature that sold me. Portless detects when you're in a git worktree and prepends the branch name as a subdomain:
+
+```
+Main repo (develop):     http://myapp.localhost:1355
+Worktree (feat/auth):    http://auth.myapp.localhost:1355
+Worktree (fix/nav-bug):  http://nav-bug.myapp.localhost:1355
+```
+
+Same script in `package.json`. Zero config changes. Each worktree gets:
+- Its own URL
+- Its own random port
+- Its own browser cookies and localStorage (different origin)
+
+Default branches (`main`, `master`) don't get a prefix -- they're treated as the primary instance.
+
+## Cross-Service References
+
+When your frontend needs to know the backend's URL:
+
+```bash
+BACKEND_URL=$(portless get api) vite dev
+```
+
+`portless get` prints the URL without running anything. It respects the same worktree logic, so in a worktree the backend URL also gets the branch prefix.
+
+## Static Aliases
+
+For services not managed by portless (Docker containers, databases with web UIs):
+
+```bash
+portless alias my-postgres 5432
+# -> http://my-postgres.localhost:1355
+portless alias --remove my-postgres
+```
+
+## Wildcard Subdomains
+
+Any subdomain of a registered route automatically works:
+
+```
+http://myapp.localhost:1355          -> your app
+http://tenant1.myapp.localhost:1355  -> same app
+http://tenant2.myapp.localhost:1355  -> same app
+```
+
+Useful for multi-tenant apps that use subdomain routing.
+
+## HTTPS Mode
+
+```bash
+portless proxy start --https
+```
+
+Auto-generates certificates, adds the CA to your system trust store (one-time prompt), and enables HTTP/2 multiplexing. No browser warnings. This matters when you're testing features that require secure contexts (clipboard API, geolocation, service workers).
+
+## The Route Table
+
+See what's running:
+
+```bash
+portless list
+```
+
+```
+Active routes:
+  http://myapp.localhost:1355        -> localhost:4782  (pid 12345)
+  http://my-storybook.localhost:1355 -> localhost:4521  (pid 12400)
+  http://my-db.localhost:1355        -> localhost:5432  (alias)
+```
+
+Stale routes (where the owning process died) are automatically cleaned up.
+
+## Why Not Just Use Different Ports?
+
+You can. But:
+
+1. **Ports are implicit knowledge.** "Which port is the admin panel on?" is a question that shouldn't exist.
+2. **Cookies collide.** Two apps on `localhost` with different ports share cookies in some browsers. Named `.localhost` subdomains don't.
+3. **Worktrees break everything.** The moment you `git worktree add` and run the same dev command, you get EADDRINUSE. Portless makes worktrees a first-class workflow.
+4. **URLs are shareable.** "Open `my-dashboard.localhost:1355`" is easier to communicate than "open localhost on whatever port the dashboard is running on."
+
+## Setup Summary
+
+```bash
+# One-time setup
+npm install -g portless
+portless proxy start
+
+# Per-project (in package.json)
+"dev": "portless run vite dev"
+
+# Or with a custom name
+"storybook": "portless run --name my-sb sh -c 'exec storybook dev -p $PORT'"
+```
+
+That's it. Every project gets a stable URL. Every worktree gets its own. No port numbers to remember, no conflicts to debug.
+
+---
+
+> **Frontend AI Dev** (2/5): [1. agent-browser](/blog/agent-browser-ai-automation) | portless | [3. dev3000](/blog/dev3000-ai-dev-server) | [4. svelte-grab](/blog/svelte-grab-component-source) | [5. The Full Stack](/blog/d3k-portless-agent-browser)
