@@ -170,6 +170,8 @@
 	'M 139.00,24.00 L 140.00,23.00',
 	'M 140.00,23.00 L 142.00,20.00'
 	];
+
+	let replayKey = $state(0);
 </script>
 
 <svg
@@ -177,10 +179,13 @@
 	xmlns="http://www.w3.org/2000/svg"
 	aria-label="Nutchanon"
 	role="img"
+	onmouseenter={() => replayKey++}
 >
-	{#each paths as d, i}
-		<path {d} pathLength="1" style="--i: {i};" />
-	{/each}
+	{#key replayKey}
+		{#each paths as d, i}
+			<path {d} pathLength="1" style="--i: {i};" />
+		{/each}
+	{/key}
 </svg>
 
 <style>
