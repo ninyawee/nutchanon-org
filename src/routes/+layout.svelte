@@ -1,5 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import AnimatedLogo from '$lib/components/AnimatedLogo.svelte';
 	import '../app.css';
 
 	let { children } = $props();
@@ -14,7 +15,7 @@
 <div class="container">
 	<header>
 		<nav>
-			<a href="/" class="logo">Nutchanon</a>
+			<a href="/" class="logo" aria-label="Nutchanon — home"><AnimatedLogo /></a>
 			<div class="nav-links">
 				<a href="/">Home</a>
 				<a href="/blog">Blog</a>
