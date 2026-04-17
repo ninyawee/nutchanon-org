@@ -7,6 +7,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="alternate" type="application/rss+xml" title="Nutchanon" href="/rss.xml" />
 	<title>Nutchanon</title>
 </svelte:head>
 
@@ -29,7 +30,7 @@
 		<p>
 			&copy; {new Date().getFullYear()} Nutchanon. All rights reserved.
 			<a href="https://webring.wonderful.software#nutchanon.org" title="วงแหวนเว็บ" class="webring">
-				<img alt="วงแหวนเว็บ" width="20" height="20" src="https://webring.wonderful.software/webring.white.svg" />
+				<img alt="วงแหวนเว็บ" width="20" height="20" src="https://webring.wonderful.software/webring.black.svg" />
 			</a>
 		</p>
 	</footer>
