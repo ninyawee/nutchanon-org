@@ -1,0 +1,288 @@
+---
+title: "Until We Reach a Shared Understanding — The Foundational AI Skill"
+description: "A three-sentence skill from Matt Pocock reframed how I work with AI. 13 questions, 4 blind spots, and enough clarity to run agents unsupervised overnight."
+date: '2026-04-17'
+image: /blog/until-we-reach-shared-understanding/og.png
+published: true
+---
+
+<script>
+	let lang = $state('en');
+</script>
+
+<div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+	<button onclick={() => lang = 'en'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'en' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">EN</button>
+	<button onclick={() => lang = 'th'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'th' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">TH</button>
+</div>
+
+{#if lang === 'en'}
+
+![Until we reach a shared understanding — the foundational AI skill](/blog/until-we-reach-shared-understanding/og.png)
+
+> Interview me relentlessly about every aspect of this plan **until we reach a shared understanding**. Walk down each branch of the design tree, resolving dependencies between decisions one by one.
+
+That's the entire skill. Three sentences. I read them and something in my chest went quiet.
+
+"Until we reach a shared understanding." So plain. So romantic. So touching. Most of the wrong things I've ever shipped weren't bugs. They were mismatches — between what I thought I asked for, and what actually got built. And here was a phrase that named the thing. Not "write better specs." Not "clarify requirements." **Shared understanding.** Between two minds. Mine and the model's.
+
+I stole it immediately.
+
+## Where it came from
+
+The phrase is from [Matt Pocock's video on the 5 Claude Code skills he uses every day](https://www.youtube.com/watch?v=EJyuu6zlQCg). The one he opens with is [`grill-me`](https://github.com/mattpocock/skills). Three sentences. No templates, no scaffolding. Just an instruction to interview him until the design tree — an idea he credits to Frederick P. Brooks' *The Design of Design* — has been walked branch by branch.
+
+What hit me is that the phrase isn't about the AI producing something. It's about **a state two parties arrive at together**. The AI hasn't completed its job when the plan is written. It has completed its job when we both see the same thing.
+
+That reframing is the whole article.
+
+## Plan mode alone doesn't do it
+
+Before I found `grill-me`, I lived in Claude Code's plan mode. My prompts looked like this:
+
+> implement landing page using this design.md — start with hero, then…
+
+Plan mode does what it says: it plans. It jumps straight to *how*. What it does not do — and what I was missing — is **push back on the premise**. It will happily produce a plan for the wrong feature. That is the shape of the failure. It looks like progress.
+
+`grill-me` forces a different phase before planning. You don't get to plan until the two of you agree on what's being built.
+
+## The loop I actually run
+
+I've been running this for weeks. Not just for PRDs — for anything where the cost of building the wrong thing is higher than the cost of talking for 20 more minutes. Which, it turns out, is almost everything.
+
+1. **I propose.** A goal, a feature, a refactor, a direction. Rough.
+2. **The AI grills me.** Usually 10–16 questions. Sometimes two rounds — it'll answer what it can from the codebase, ask a batch, digest my answers, then come back with more.
+3. **I reflect.** About a third of those questions hit corners I hadn't considered.
+4. **I propose again.** Sharper. With the new angles folded in.
+
+Back and forth. Push and pull. Until the design tree is walked.
+
+## A real session (abbreviated)
+
+Here's the shape, from a recent session on a private client project — a chat platform with hundreds of thousands of messages. I wanted to add message-content search so staff could type `msg:พาร์ทไทม์` and find rooms that had actually talked about part-time work, not just rooms tagged with someone named "พาร์ทไทม์."
+
+The AI explored the codebase first, then asked 14 questions over the next hour. A sample of the ones that made me stop typing:
+
+> **Q1:** Should message search be part of free text, or a separate qualifier? If we fold it in, every name search scans 165K `search_text` rows. Or we introduce `msg:` as an explicit qualifier.
+
+Fine — I had this one in my head already. (8-out-of-12 territory.)
+
+> **Q2:** The matching message won't be the latest message shown in the card. The user sees a room but has no idea *which* message matched or where it is in the conversation. Three options: (A) return the room, user scrolls; (B) return the room + matched message snippet; (C) A now, B later.
+
+I hadn't thought about this *at all*. The card UI shows the latest message — so `msg:` would hand users a room full of thousands of messages with no cursor. Design tree branch I missed. (4-out-of-12.)
+
+> **Q12:** Snippet length. The matched message could be very long. Should the RPC return the full `search_text` and let the frontend CSS-truncate, or return a 100-char window from the DB centered on the match?
+
+A database-performance question I would not have asked myself until production. (Also 4-out-of-12.)
+
+By question 14, the AI summarized the whole plan back — every branch resolved, every decision recorded. When it said *"Anything you want to change, or should I start implementing?"* I actually felt calm. That feeling is the stopping criterion I'll come back to.
+
+## The variance
+
+That 4-out-of-12 number is a rough average. It's not stable.
+
+- **Domains I know cold** — sometimes I come out of a grilling session with 0/12. Everything the AI asks, I already resolved. That's still useful. It's confirmation. It means I can go implement without doubt.
+- **Unfamiliar territory** — sometimes it's 8/12. I'll be halfway through answering a question and realize I don't actually understand what I'm building. That's not a failure of the skill — that *is* the skill. It's the skill working exactly as intended.
+
+The 4/12 is not a target. It's an observation that there's almost always *something*.
+
+## Works both ways
+
+`grill-me` looks, on the surface, like the AI extracting requirements from you. What actually happens is different: the questions push you back. They make you reconsider your own standing.
+
+This shows up hardest in non-engineering work. I recently asked an AI how to get into a particular real estate market. I expected a cheerful playbook. What I got was a grilling — questions about my capital horizon, my risk comfort, whether I wanted yield or appreciation, whether I'd operate or delegate. By question six I had changed my mind about what I was even asking for.
+
+It is less "the AI interviews me" and more "two minds at a whiteboard, one with perfect recall of the internet." Neither of us is in charge. We're both responsible for the shared understanding.
+
+## When not to use it
+
+Honest section. `grill-me` is not free.
+
+- **Small, well-defined changes** — fixing a typo, bumping a dependency, adding a log line. Just prompt normally.
+- **Areas where I'm so confident it has to be done exactly this way** — I skip straight to plan mode and spend the time on implementation detail instead.
+- **When it over-asks** — sometimes I've seen the AI keep drilling into tiny details I've already dismissed. 20, 27 questions, 12 per round. When that happens I cut it off and say "that's enough, write the plan." It listens.
+
+The overhead is maybe 15–30 minutes for a meaningful feature. That is a lot. It's also a lot less than a week of building the wrong thing.
+
+## The stopping criterion
+
+> How do you know you've reached shared understanding?
+
+The honest answer: the AI has a sense. It stops at the right time. When the tree is walked, the questions stop coming, and it offers to summarize the plan back. The summary is the tell. If I can read it and feel calm, we're done.
+
+If I can read it and feel uneasy — *wait, what about…* — that's another round.
+
+## Why AI is specifically good at this
+
+Pair programming and rubber ducks exist. I've used both. Pair programming is real but one-directional for me — as the more senior engineer, I don't get much push-back. The duck doesn't ask anything.
+
+The AI has what neither has: it will ask *all 12 questions*, not just the three a tired human would rank as highest-priority. There is no social cost for it to ask something that sounds obvious. It won't judge me for not having thought about it. It is infinitely patient. That coverage — the commitment to actually walking the whole tree — is why the 4/12 blind-spot rate is so consistent. A human collaborator would have stopped at 3.
+
+## The chain downstream
+
+After `grill-me`, the rest of Matt's workflow kicks in — `write-a-prd`, `prd-to-issues`, `tdd`. I've run the full chain end-to-end now. The thing I didn't expect: once shared understanding is locked in upstream, I can let agents run **unsupervised overnight**. I wake up to finished issues.
+
+That courage — to step away from the keyboard while something is being built — is not technical. It's upstream. It's the shared understanding.
+
+## Short, simple, framework-agnostic
+
+One more thing. If you open [Matt's public skills repo](https://github.com/mattpocock/skills), you notice something: they're *tiny*. `grill-me` is three sentences. The others aren't much longer. No framework coupling, no language-specific patterns.
+
+That's the virtue. These skills encode **process**, not **tech**. They work in a SvelteKit repo, a Go service, a Rails app, a notebook, a PRD doc, a real estate decision. Process is the thing AI agents consistently miss — no memory, no taste, no intuition for when to stop. Encoding it explicitly is what makes them usable.
+
+Skills don't need to be long to be impactful. As Matt says in the video — pick the right words for the LLM at the right time. The shortness is the feature.
+
+And they're portable across tools. Vercel's skills CLI works with anything:
+
+```bash
+npx skills@latest add mattpocock/skills/grill-me
+```
+
+That's it. One line, and you have the foundational skill in any agent-backed setup.
+
+## The phrase, one more time
+
+> until we reach a shared understanding
+
+Put it in a skill. Put it in a system prompt. Put it at the top of a PRD template. Put it on a sticky note.
+
+Most of the AI collaboration advice I've seen is about getting better output. This one is about getting to a better *state* — one that sits between you and the model, before any output exists. Once you're in that state, the output writes itself.
+
+Thanks, Matt. I'll be using this one for a long time.
+
+{:else if lang === 'th'}
+
+![จนกว่าเราจะเข้าใจตรงกัน — ทักษะพื้นฐานในการใช้ AI](/blog/until-we-reach-shared-understanding/og-th.png)
+
+> Interview me relentlessly about every aspect of this plan **until we reach a shared understanding**. Walk down each branch of the design tree, resolving dependencies between decisions one by one.
+
+นี่คือ skill ทั้งหมด สามประโยค ผมอ่านจบแล้วรู้สึกเหมือนอะไรบางอย่างในอกเงียบลง
+
+"Until we reach a shared understanding." "จนกว่าเราจะเข้าใจตรงกัน" — เรียบง่าย โรแมนติก สะกิดใจ ของพังๆ ที่ผมเคย ship ส่วนใหญ่ไม่ใช่ bug มันคือความไม่ตรงกัน — ระหว่างสิ่งที่ผมคิดว่าสั่งไป กับสิ่งที่ถูกสร้างขึ้นจริง แล้วประโยคนี้ก็มาตั้งชื่อให้สิ่งนั้น ไม่ใช่ "เขียน spec ให้ดีขึ้น" ไม่ใช่ "clarify requirements" แต่เป็น **เข้าใจตรงกัน** ระหว่างสองจิตใจ ของผมกับโมเดล
+
+ผมขโมยมาใช้ทันที
+
+## ประโยคนี้มาจากไหน
+
+มาจาก[วิดีโอของ Matt Pocock ที่พูดถึง 5 Claude Code skills ที่เขาใช้ทุกวัน](https://www.youtube.com/watch?v=EJyuu6zlQCg) ตัวแรกที่เขาเปิดคือ [`grill-me`](https://github.com/mattpocock/skills) สามประโยค ไม่มี template ไม่มี scaffolding แค่คำสั่งให้สัมภาษณ์เขาจนกว่า design tree — ไอเดียที่เขาให้เครดิต Frederick P. Brooks จากหนังสือ *The Design of Design* — จะถูกเดินครบทุกกิ่ง
+
+สิ่งที่สะกิดผมคือ ประโยคนี้ไม่ได้พูดถึงการที่ AI ผลิตอะไรออกมา แต่พูดถึง **สถานะที่สองฝ่ายไปถึงด้วยกัน** AI ยังไม่เสร็จงานเมื่อ plan ถูกเขียน AI เสร็จงานเมื่อเราทั้งคู่เห็นภาพเดียวกัน
+
+การ reframe แบบนี้แหละ คือทั้งหมดของบทความ
+
+## Plan mode อย่างเดียวไม่พอ
+
+ก่อนที่ผมจะเจอ `grill-me` ผมอยู่ใน plan mode ของ Claude Code ตลอด prompt ของผมหน้าตาแบบนี้:
+
+> implement landing page using this design.md — start with hero, then…
+
+Plan mode ทำสิ่งที่มันบอก — มันวางแผน มันกระโดดไป *how* ทันที สิ่งที่มันไม่ทำ และเป็นสิ่งที่ผมขาด คือ **ย้อนถามถึง premise** มันวางแผนสร้าง feature ที่ผิดได้อย่างมีความสุข นั่นคือรูปแบบของความล้มเหลว มันดูเหมือน progress
+
+`grill-me` บังคับให้มี phase อื่นก่อน plan จะเริ่ม คุณไม่ได้วางแผนจนกว่าทั้งสองฝ่ายจะเห็นตรงกันว่ากำลังสร้างอะไร
+
+## loop ที่ผมใช้จริง
+
+ผมใช้วิธีนี้มาเป็นสัปดาห์แล้ว ไม่ใช่แค่กับ PRD — ใช้กับทุกอย่างที่ cost ของการสร้างผิดสูงกว่า cost ของการคุยเพิ่มอีก 20 นาที ซึ่งปรากฏว่า เกือบทุกอย่าง
+
+1. **ผมเสนอ** — เป้าหมาย feature refactor ทิศทาง แบบหยาบๆ
+2. **AI ซักผม** — ปกติ 10–16 คำถาม บางครั้งเป็นสองรอบ มันจะตอบสิ่งที่ตอบได้จาก codebase ก่อน แล้วถามชุดหนึ่ง ย่อยคำตอบของผม แล้วกลับมาถามต่อ
+3. **ผมสะท้อน** — ประมาณหนึ่งในสามของคำถามชนมุมที่ผมไม่ได้คิดถึง
+4. **ผมเสนอใหม่** — คมขึ้น พร้อมมุมใหม่ที่พับเข้ามา
+
+ไปกลับ ดึงดัน จนกว่า design tree จะเดินครบ
+
+## session จริง (แบบย่อ)
+
+นี่คือหน้าตา จาก session ล่าสุดในโปรเจกต์ลูกค้าส่วนตัว — เป็น chat platform ที่มีข้อความหลักแสน ผมอยากเพิ่ม message content search เพื่อให้ทีมงาน type `msg:พาร์ทไทม์` แล้วหาห้องที่คุยเรื่องงาน part-time ได้จริงๆ ไม่ใช่แค่ห้องที่ผูกกับคนชื่อ "พาร์ทไทม์"
+
+AI สำรวจ codebase ก่อน แล้วถาม 14 คำถามในชั่วโมงถัดมา ตัวอย่างที่ทำให้ผมหยุดพิมพ์:
+
+> **Q1:** Should message search be part of free text, or a separate qualifier? If we fold it in, every name search scans 165K `search_text` rows. Or we introduce `msg:` as an explicit qualifier.
+
+โอเค อันนี้ผมคิดไว้แล้ว (โซน 8/12)
+
+> **Q2:** The matching message won't be the latest message shown in the card. The user sees a room but has no idea *which* message matched or where it is in the conversation. Three options: (A) return the room, user scrolls; (B) return the room + matched message snippet; (C) A now, B later.
+
+อันนี้ผมไม่ได้คิดถึง *เลย* Card UI แสดงข้อความล่าสุด ดังนั้น `msg:` จะโยนห้องที่มีพันข้อความให้ user โดยไม่มี cursor กิ่งของ design tree ที่ผมพลาด (โซน 4/12)
+
+> **Q12:** Snippet length. The matched message could be very long. Should the RPC return the full `search_text` and let the frontend CSS-truncate, or return a 100-char window from the DB centered on the match?
+
+คำถาม database performance ที่ผมคงไม่ถามตัวเองจนกว่าจะขึ้น prod (โซน 4/12 เช่นกัน)
+
+พอคำถามที่ 14 AI สรุป plan ทั้งหมดกลับมา ทุกกิ่งถูกคลี่ ทุกการตัดสินใจถูกบันทึก ตอนมันถามว่า *"Anything you want to change, or should I start implementing?"* ผมรู้สึกสงบจริงๆ ความรู้สึกนั้นแหละ คือ stopping criterion ที่ผมจะย้อนกลับมาพูดถึง
+
+## ความแปรปรวน
+
+ตัวเลข 4/12 เป็นค่าเฉลี่ยคร่าวๆ มันไม่นิ่ง
+
+- **Domain ที่ผมรู้ขึ้นใจ** — บางครั้งออกมาจาก session แบบ 0/12 ทุกคำถามที่ AI ถาม ผมแก้ไว้หมดแล้ว ก็ยังมีประโยชน์ เป็นการ confirm ผมลงมือได้โดยไม่ต้องลังเล
+- **ดินแดนที่ไม่คุ้น** — บางครั้ง 8/12 ผมตอบคำถามไปครึ่งหนึ่งแล้วถึงรู้ว่าผมไม่เข้าใจสิ่งที่กำลังสร้างจริงๆ นั่นไม่ใช่ความล้มเหลวของ skill — นั่น *คือ* skill มันทำงานอย่างที่มันควรทำ
+
+4/12 ไม่ใช่เป้า มันคือข้อสังเกตว่าเกือบทุกครั้ง *มีอะไรบางอย่าง*
+
+## มันทำงานสองทิศ
+
+`grill-me` ดูผิวเผินเหมือน AI ดึง requirements ออกมาจากคุณ แต่สิ่งที่เกิดขึ้นจริงต่างออกไป คำถามมันย้อนกลับมาดันคุณ ให้คุณทบทวนจุดยืนของตัวเอง
+
+อันนี้เห็นชัดที่สุดในงานที่ไม่ใช่ engineering ผมเพิ่งถาม AI ว่าจะเข้าตลาดอสังหาริมทรัพย์ที่สนใจยังไง ผมคาดว่าจะได้ playbook แบบร่าเริง แต่ที่ได้คือการซัก — คำถามเรื่องกรอบเวลาของ capital ความสบายใจต่อ risk ต้องการ yield หรือ appreciation จะบริหารเองหรือ delegate พอถึงคำถามที่หก ผมเปลี่ยนใจเรื่องสิ่งที่ถามไปตั้งแต่แรก
+
+มันไม่ใช่ "AI สัมภาษณ์ผม" แต่เป็น "สองจิตใจที่หน้าไวท์บอร์ด หนึ่งในนั้นจำทุกอย่างจากอินเทอร์เน็ตได้" ไม่มีใครเป็นคนคุม เราทั้งคู่รับผิดชอบต่อความเข้าใจตรงกัน
+
+## เมื่อไม่ควรใช้
+
+section ซื่อตรง `grill-me` ไม่ฟรี
+
+- **การเปลี่ยนแปลงเล็กๆ ที่ชัดเจน** — แก้ typo bump dependency เพิ่ม log สักบรรทัด prompt ปกติไปเลย
+- **พื้นที่ที่ผมมั่นใจว่าต้องทำแบบนี้แน่นอน** — ผมกระโดดเข้า plan mode ตรงๆ แล้วไปทุ่มเวลากับ implementation detail แทน
+- **เมื่อมันถามมากเกินไป** — บางครั้ง AI เจาะลงไปใน detail เล็กๆ ที่ผมปัดทิ้งไปแล้ว 20 27 คำถาม รอบละ 12 พอถึงจุดนั้นผมตัดจบแล้วบอก "พอแล้ว เขียน plan เลย" มันฟัง
+
+overhead ราว 15–30 นาทีต่อ feature ที่มีความหมาย เยอะอยู่ แต่ก็ยังน้อยกว่าการสร้างของผิดเป็นสัปดาห์
+
+## stopping criterion
+
+> รู้ได้ยังไงว่าเข้าใจตรงกันแล้ว
+
+ตอบตรงๆ AI มี sense ของมัน มันหยุดตอนที่ควรหยุด เมื่อ tree ถูกเดินครบ คำถามหยุดไหล แล้วมันเสนอสรุป plan กลับมา สรุปนั้นแหละคือสัญญาณ ถ้าผมอ่านแล้วรู้สึกสงบ เราเสร็จแล้ว
+
+ถ้าอ่านแล้วรู้สึกกังวล — *เดี๋ยว แล้วเรื่อง…* — นั่นคือรอบต่อไป
+
+## ทำไม AI ถึงเก่งเรื่องนี้เป็นพิเศษ
+
+Pair programming และ rubber duck มีอยู่ ผมใช้ทั้งสองอย่างแล้ว Pair programming มันจริง แต่สำหรับผมมันเป็นทิศทางเดียว — ในฐานะ engineer ที่ senior กว่า ผมไม่ค่อยได้ push back เป็ดก็ไม่ถามอะไรเลย
+
+AI มีสิ่งที่ทั้งสองอย่างไม่มี — มันจะถาม *ครบทั้ง 12 คำถาม* ไม่ใช่แค่สามอันดับแรกที่มนุษย์เหนื่อยๆ จะจัดว่าสำคัญที่สุด ไม่มี social cost ในการถามสิ่งที่ฟังดูเชย มันไม่ตัดสินผมที่ไม่ได้คิดถึงเรื่องนั้น มันอดทนไม่มีที่สิ้นสุด ความครอบคลุมนั้น — commitment ที่จะเดิน tree ให้ครบจริงๆ — คือเหตุผลที่อัตรา blind spot 4/12 คงที่ คู่หูที่เป็นมนุษย์คงหยุดที่ข้อ 3
+
+## chain ที่ตามมา
+
+หลัง `grill-me` workflow ที่เหลือของ Matt ก็ทำงานต่อ — `write-a-prd`, `prd-to-issues`, `tdd` ผมรัน chain ครบจากต้นจนจบแล้ว สิ่งที่ผมไม่ได้คาดคือ เมื่อความเข้าใจตรงกันถูก lock ต้นน้ำ ผมปล่อย agent รัน **ข้ามคืนโดยไม่ต้องเฝ้า** ได้ ตื่นมาเจอ issue ที่เสร็จ
+
+ความกล้าแบบนั้น — เดินออกจากคีย์บอร์ดขณะที่ของกำลังถูกสร้าง — ไม่ใช่เรื่อง technical มันเป็นเรื่องต้นน้ำ เป็นเรื่องความเข้าใจตรงกัน
+
+## สั้น เรียบ ไม่ผูกกับ framework
+
+อีกเรื่องหนึ่ง ถ้าเปิด [repo skill สาธารณะของ Matt](https://github.com/mattpocock/skills) ดู จะสังเกตอะไรบางอย่าง — มัน *เล็กมาก* `grill-me` สามประโยค ตัวอื่นก็ไม่ได้ยาวไปกว่านั้น ไม่ผูกกับ framework ไหน ไม่มี pattern เฉพาะภาษา
+
+นั่นคือ virtue ของมัน skill พวกนี้เข้ารหัส **process** ไม่ใช่ **tech** ใช้ได้ใน SvelteKit repo Go service Rails app notebook เอกสาร PRD หรือการตัดสินใจซื้ออสังหา process คือสิ่งที่ AI agent พลาดเสมอ — ไม่มี memory ไม่มีรสนิยม ไม่มี intuition ว่าเมื่อไหร่ควรหยุด การเข้ารหัสมันชัดๆ คือสิ่งที่ทำให้มันใช้ได้
+
+Skill ไม่ต้องยาวถึงจะทรงพลัง อย่างที่ Matt พูดในวิดีโอ — เลือกคำที่ถูกต้องสำหรับ LLM ในเวลาที่ถูกต้อง ความสั้น คือ feature
+
+และมัน portable ข้าม tool Vercel's skills CLI ใช้ได้กับทุกอย่าง:
+
+```bash
+npx skills@latest add mattpocock/skills/grill-me
+```
+
+เท่านี้ หนึ่งบรรทัด คุณมี skill พื้นฐานใน setup ที่ใช้ agent อะไรก็ได้
+
+## ประโยคนั้น อีกครั้งหนึ่ง
+
+> until we reach a shared understanding
+>
+> จนกว่าเราจะเข้าใจตรงกัน
+
+ใส่ไว้ใน skill ใส่ไว้ใน system prompt ใส่ไว้หัว template PRD ใส่ไว้บน sticky note
+
+คำแนะนำเรื่อง AI collaboration ส่วนใหญ่ที่ผมเห็น พูดถึงการได้ output ที่ดีขึ้น อันนี้พูดถึงการไปถึง *สถานะ* ที่ดีขึ้น — สถานะที่อยู่ระหว่างคุณกับโมเดล ก่อนที่ output จะมีอยู่จริง เมื่อถึงสถานะนั้นแล้ว output จะเขียนตัวเอง
+
+ขอบคุณครับ Matt ผมจะใช้ประโยคนี้ไปอีกนาน
+
+{/if}
