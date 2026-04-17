@@ -2,12 +2,12 @@
 title: "Until We Reach a Shared Understanding — The Foundational AI Skill"
 description: "A three-sentence skill from Matt Pocock reframed how I work with AI. 13 questions, 4 blind spots, and enough clarity to run agents unsupervised overnight."
 date: '2026-04-17'
-image: /blog/until-we-reach-shared-understanding/og.png
+image: /blog/until-we-reach-shared-understanding/og-th.png
 published: true
 ---
 
 <script>
-	let lang = $state('en');
+	let lang = $state('th');
 </script>
 
 <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
