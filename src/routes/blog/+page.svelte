@@ -19,9 +19,14 @@
 			<li>
 				<a href="/blog/{post.slug}">
 					<article>
-						<h2>{post.title}</h2>
-						<p class="description">{post.description}</p>
-						<time datetime={post.date}>{formatDate(post.date)}</time>
+						{#if post.image}
+							<img class="thumb" src={post.image} alt="" loading="lazy" />
+						{/if}
+						<div class="meta">
+							<h2>{post.title}</h2>
+							<p class="description">{post.description}</p>
+							<time datetime={post.date}>{formatDate(post.date)}</time>
+						</div>
 					</article>
 				</a>
 			</li>
@@ -67,6 +72,35 @@
 	.post-list a:hover {
 		background-color: rgba(0, 0, 0, 0.03);
 		text-decoration: none;
+	}
+
+	.post-list article {
+		display: grid;
+		grid-template-columns: 200px 1fr;
+		gap: 1.5rem;
+		align-items: start;
+	}
+
+	.post-list .thumb {
+		width: 200px;
+		aspect-ratio: 1200 / 630;
+		object-fit: cover;
+		border-radius: 6px;
+		display: block;
+	}
+
+	.post-list .meta {
+		min-width: 0;
+	}
+
+	@media (max-width: 640px) {
+		.post-list article {
+			grid-template-columns: 1fr;
+		}
+
+		.post-list .thumb {
+			width: 100%;
+		}
 	}
 
 	.post-list h2 {
