@@ -76,9 +76,13 @@
 
 	.post-list article {
 		display: grid;
-		grid-template-columns: 200px 1fr;
+		grid-template-columns: 1fr;
 		gap: 1.5rem;
 		align-items: start;
+	}
+
+	.post-list article:has(.thumb) {
+		grid-template-columns: 200px 1fr;
 	}
 
 	.post-list .thumb {
