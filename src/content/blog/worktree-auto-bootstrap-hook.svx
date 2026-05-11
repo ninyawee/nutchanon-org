@@ -1,0 +1,137 @@
+---
+title: "Auto-Bootstrapping git worktrees with a Shared post-checkout Hook"
+description: "git worktree add fires exactly one hook -- post-checkout. Put it in the shared hooks dir, have it run a mise task, and every new worktree comes up trusted, installed, and ready to use."
+date: '2026-05-11'
+published: false
+---
+
+Git worktrees are the right way to juggle parallel branches -- one checkout per branch, no stashing, no context-switch tax. But every new worktree starts out *almost* usable. Before you can actually work in it you have to:
+
+- `mise trust` the worktree's `mise.toml` files (root + every sub-project)
+- `mise install` the pinned toolchain and run project setup
+- install the git hooks (`hk install --mise`, in my case)
+- copy the machine-local secret files that are gitignored on purpose, so they never travel with the repo
+
+Miss a step and the worktree half-works: the dev server boots but can't reach a service, or `mise` refuses to run because the config is untrusted. You find out three commands later.
+
+The goal of this post: make `git worktree add <path> <branch>` leave behind a worktree that is *ready to use*. No checklist, no "oh right, I forgot to trust it."
+
+## `git worktree add` fires exactly one hook: `post-checkout`
+
+This is the whole foundation, so it's worth being precise. From `man githooks`, `post-checkout` runs:
+
+- after `git checkout` / `git switch`
+- after `git clone`
+- after `git worktree add` (unless you pass `--no-checkout`)
+
+It receives three arguments -- `<prev-HEAD-sha> <new-HEAD-sha> <branch-checkout-flag>` -- and runs with the current working directory set to the **new worktree's root**. That last detail is the gift: when the hook fires for a `git worktree add`, you're already standing in the new worktree.
+
+How do you tell "fresh worktree" apart from an ordinary branch switch? The arguments:
+
+- `git worktree add` / `git clone` -- `$1` is the all-zeros **null SHA**, `$3` is `1`
+- `git switch other-branch` -- `$1` is a real commit SHA, `$3` is `1`
+- `git checkout -- some/file` -- `$1` is a real commit SHA, `$3` is `0`
+
+So the guard for "this is a brand-new worktree" is: **prev-HEAD is the null SHA, and the branch flag is `1`**. Two cheap string checks.
+
+## One hook, every worktree: the shared hooks dir
+
+Worktrees don't get their own `.git/hooks`. They share `$GIT_COMMON_DIR/hooks` -- the main checkout's `.git/hooks` directory. (`git rev-parse --git-common-dir` prints that path; in a worktree it points back at the main repo, in the main checkout it's just `.git`.)
+
+That's exactly the property we want: install a `post-checkout` hook **once**, into the common dir, and every worktree created *afterward* inherits it automatically. No per-worktree install step -- which is good, because there's no natural moment to run one.
+
+One caveat about `core.hooksPath`: `hk install --mise` (and most hook installers) point at the common dir using an **absolute** path, which is fine and shared. Never set `core.hooksPath` to a *relative* path -- it resolves relative to each worktree's working directory and silently breaks the moment you `cd` into a worktree.
+
+## The bootstrap task
+
+I keep the actual bootstrap logic in a `mise` task -- `wt:bootstrap` -- so it's runnable by hand too, not just from the hook. It trusts the config, copies machine-local secrets from the main checkout, installs tools and deps, and installs the hooks:
+
+```toml
+[tasks."wt:bootstrap"]
+description = "Make a freshly-created worktree ready to use (trust + machine-local secrets + tools/deps + git hooks)"
+run = '''
+mise trust >/dev/null 2>&1 || true
+for d in frontends/admin-panel frontends/liff backends/foo; do   # your sub-projects with their own mise.toml
+  [ -f "$d/mise.toml" ] && (mise -C "$d" trust >/dev/null 2>&1 || true)
+done
+MAIN=$(git worktree list --porcelain 2>/dev/null | awk 'NR==1{print $2}')
+if [ -n "${MAIN:-}" ] && [ "$MAIN" != "$PWD" ] && [ -f "$MAIN/fnox.local.toml" ] && [ ! -e fnox.local.toml ]; then
+  cp "$MAIN/fnox.local.toml" fnox.local.toml && echo "🔑 copied fnox.local.toml from $MAIN"
+fi
+mise install || true
+mise run setup-hk || true
+mise run init || true
+echo "✅ worktree ready: $PWD"
+'''
+```
+
+A few things worth calling out:
+
+- **`git worktree list --porcelain` -- first entry is the main checkout.** That's where the gitignored secrets live. The `"$MAIN" != "$PWD"` check makes this a no-op on a fresh `git clone` (where the "main" is the directory you're already in), and `[ ! -e fnox.local.toml ]` keeps it from clobbering a file you've already customized.
+- **`fnox.local.toml` is just the example here.** `fnox` auto-merges it alongside the committed `fnox.toml`, so machine-local overrides live in a file git never sees. The pattern is identical for `.env.local`, `.envrc.local`, whatever your stack uses.
+- **Every step ends in `|| true`.** This is not laziness -- it's load-bearing. An offline machine, a missing source file, a sub-project that hasn't been set up yet... none of those should half-break the worktree, and *definitely* none of them should make the hook exit non-zero, because **a non-zero `post-checkout` exit makes `git worktree add` itself report failure**. The worktree still gets created, but git prints an error and scripts wrapping it choke. Bootstrap is best-effort by design; the worktree is usable even if one step couldn't run.
+
+## Wiring it into `setup-hk`
+
+I already had a `setup-hk` task -- the one that runs `hk install --mise` to lay down the lint/commit hooks. I extended it to *also* write the `post-checkout` hook into the shared hooks dir:
+
+```sh
+HOOKS_DIR="$(cd "$(git rev-parse --git-common-dir)" && pwd)/hooks"
+mkdir -p "$HOOKS_DIR"
+cat > "$HOOKS_DIR/post-checkout" <<'HOOK'
+#!/bin/sh
+# Auto-bootstrap a freshly-created worktree. Args: <prev-HEAD> <new-HEAD> <is-branch-checkout>.
+case "$1" in '' | *[!0]*) exit 0 ;; esac   # only when prev-HEAD is the null SHA → worktree-add / clone
+[ "$3" = "1" ] || exit 0                    # only branch checkouts, not `git checkout -- <file>`
+echo "🌱 New worktree detected — bootstrapping ($PWD)..."
+mise trust >/dev/null 2>&1 || true
+mise run wt:bootstrap || true
+exit 0
+HOOK
+chmod +x "$HOOKS_DIR/post-checkout"
+```
+
+The hook file is **generated, not version-controlled**. `setup-hk` re-creates it every time it runs, and `wt:bootstrap` calls `setup-hk` -- so the hook self-propagates: bootstrap a worktree, the worktree's `setup-hk` rewrites the shared `post-checkout`, and the next `git worktree add` is covered. You never edit `.git/hooks/post-checkout` by hand.
+
+Note the `case "$1" in '' | *[!0]*) exit 0 ;; esac` -- that's "exit unless `$1` is empty or contains a non-`0` character", i.e. "proceed only if `$1` is all zeros (or absent)". It matches the 40-char null SHA and the 64-char SHA-256 null without hardcoding a length.
+
+## Why a plain hook -- and not an `hk` step
+
+This is the part that took the longest to figure out, so it gets its own section.
+
+The obvious move, if you already use a hook manager, is to add a `["post-checkout"]` step to your `hk.pkl` and let `hk install` handle it. **Don't.** Two reasons, both fundamental:
+
+**1. `hk install --mise` writes hooks that run through `mise x` -- which errors on an untrusted config.** The generated hook is essentially `exec mise x -- hk run post-checkout --from-hook "$@"`. In a *brand-new* `git worktree add`, the new worktree's `mise.toml` hasn't been trusted yet. `mise x` does not quietly fall back to global-only config in that situation -- it **errors out**: `Config files ... are not trusted`. So `hk run post-checkout` never executes, and the bootstrap that was supposed to do the trusting never runs. Classic chicken-and-egg. A plain `/bin/sh` hook that calls `mise trust` *first*, before touching anything else, sidesteps it entirely.
+
+**2. `hk` doesn't hand the hook's `$1 $2 $3` to a step's command.** A plain git hook gets git's three positional args directly, so the "only on worktree-add" guard is two lines of `sh`. Inside an `hk` `post-checkout` step (current config schema -- I checked against the ~v1.39 line and the v1.44 binary), `$@` is empty and there are no `HK_*` environment variables carrying the hook args. You can't tell a worktree-add from a `git switch` from a `git checkout -- file`. So the step would fire on *every* checkout, which is exactly what you don't want.
+
+So `hk.pkl` stays untouched and the `post-checkout` hook is owned by `setup-hk`. And to be explicit: **do not add `["post-checkout"]` to `hk.pkl`** -- the next `hk install` would overwrite the plain hook with the broken `mise x` wrapper. The same reasoning applies to any hook manager that wraps the hook in its own runner -- husky, lefthook, pre-commit. For this particular job, the plain `.git/hooks/post-checkout` file *is* the right tool.
+
+## Edge cases
+
+- **`git worktree add --no-checkout`** skips `post-checkout` entirely, so there's no auto-bootstrap. The manual fallback is one line: `mise trust && mise run wt:bootstrap`.
+- **A fresh `git clone` carries no hooks** (hooks live under `.git`, which isn't transferred), so the clone itself isn't auto-bootstrapped. Run `mise run setup-hk` once right after cloning -- from then on, every `git worktree add` is covered.
+- **Keep machine-local secret files gitignored in two places**: `.gitignore` (committed, so it's the source of truth) *and* `$GIT_COMMON_DIR/info/exclude` (not committed, but it takes effect immediately in every existing worktree without waiting for the `.gitignore` change to land). The bootstrap copies the file in from the main checkout; git never sees it in any worktree.
+- **Why the common `.git/hooks` and not per-worktree `core.hooksPath` + `extensions.worktreeConfig`?** That combo can only be set *after* the worktree exists, and it opts that worktree *out* of the shared hook. It's the wrong tool for "run something at the moment a worktree is created" -- by the time you could configure it, the moment has passed.
+
+## Verifying it
+
+Quick smoke test -- spin up a throwaway worktree and watch:
+
+```sh
+git worktree add --detach /tmp/probe
+# expect: "🌱 New worktree detected — bootstrapping (/tmp/probe)..."
+#         then the wt:bootstrap output, "🔑 copied ...", "✅ worktree ready: /tmp/probe"
+#         and `git worktree add` still exits 0
+git worktree remove --force /tmp/probe
+```
+
+And unit-check the guard directly -- only the worktree-add shape should fire:
+
+```sh
+sh .git/hooks/post-checkout 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 1   # silent (real prev-HEAD → switch)
+sh .git/hooks/post-checkout 0000000000000000000000000000000000000000 2222222222222222222222222222222222222222 0   # silent (flag 0 → file checkout)
+sh .git/hooks/post-checkout 0000000000000000000000000000000000000000 2222222222222222222222222222222222222222 1   # fires 🌱
+```
+
+That's the whole pattern: one hook, in the shared dir, that recognizes a fresh worktree and runs one best-effort `mise` task. `git worktree add` goes back to being a single command, and the worktree it leaves behind is one you can actually work in.
