@@ -1,18 +1,18 @@
 ---
-title: "in-html — Ease Your Tired Mind with a Visual Explainer Called HTML"
-description: "Stop reading markdown — your eyes will thank you. A Claude Code skill that makes the agent hand you a page, not a wall of MD. Built especially for grill-with-docs: see the frontend outcome before answering, and let complex topics arrive as one glanceable artifact instead of five paragraphs of chat. This article is itself one."
+title: "in-html — พักสายตาที่ล้า ด้วย visual explainer ที่ชื่อว่า HTML"
+description: "เลิกอ่าน markdown สักที — สายตาคุณจะขอบคุณ Claude Code skill ที่ทำให้ agent ยื่นหน้าเว็บให้คุณ ไม่ใช่กำแพง MD สร้างมาเพื่อ grill-with-docs โดยเฉพาะ: เห็นผลลัพธ์ฝั่ง frontend ก่อนตอบ แล้วให้เรื่องซับซ้อนมาถึงเป็น artifact เดียวที่มองปุ๊บเข้าใจ แทนที่จะเป็นห้าย่อหน้าใน chat บทความนี้เองก็คือหนึ่งใน artifact แบบนั้น"
 date: '2026-05-29'
 image: /blog/in-html/og.png
 published: true
+lang: th
 ---
 
 <script>
-	import og from './images/in-html/og.png?format=webp';
-	import vizExample from './images/in-html/viz-example.png?format=webp';
-	import vizFold from './images/in-html/viz-fold.png?format=webp';
-	import feedbackExample from './images/in-html/feedback-example.png?format=webp';
-	import feedbackFold from './images/in-html/feedback-fold.png?format=webp';
-	let lang = $state('th');
+	import og from '../images/in-html/og.png?format=webp';
+	import vizExample from '../images/in-html/viz-example.png?format=webp';
+	import vizFold from '../images/in-html/viz-fold.png?format=webp';
+	import feedbackExample from '../images/in-html/feedback-example.png?format=webp';
+	import feedbackFold from '../images/in-html/feedback-fold.png?format=webp';
 </script>
 
 <style>
@@ -149,248 +149,7 @@ published: true
 }
 </style>
 
-<div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
-	<button onclick={() => lang = 'en'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'en' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">EN</button>
-	<button onclick={() => lang = 'th'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'th' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">TH</button>
-</div>
-
 <div class="ih-post">
-
-{#if lang === 'en'}
-
-<img src={og} alt="Clickbait cover: 'Stop reading markdown — your eyes will thank you.' with Ben on stage holding a mic, and a pill that reads '/in-html + /grill-with-docs'" />
-
-<a class="ship-badge" href="https://github.com/ninyawee/skills/tree/main/skills/in-html" target="_blank" rel="noopener"><code>/in-html</code> is live in <code>ninyawee/skills</code> &mdash; install with <code>npx skills ninyawee/skills/in-html</code></a>
-
-<div class="callout callout-empathy">
-<strong>Hey — your eyes</strong>
-You've been reading markdown all day. Your eyes are tired in that specific gray-on-gray way. Before you close this tab: this article isn't another wall of prose. It's shaped like the thing it's about. <strong>Don't give up</strong> — you can read more if it's HTML instead of MD. That's the whole point.
-</div>
-
-## What `in-html` actually is
-
-It's a [Claude Code skill](https://github.com/ninyawee/skills/tree/main/skills/in-html). One job: **stop the agent from dumping markdown into chat when it could have handed you a page**.
-
-<div class="grid-2">
-<div class="panel panel-bad">
-<h4>Markdown in chat</h4>
-<ul>
-<li>Linear. You read top to bottom.</li>
-<li>Same gray on same gray. No shape.</li>
-<li>Diagrams degrade to ASCII art.</li>
-<li>Decisions buried in paragraphs.</li>
-<li>Eye fatigue compounds across the day.</li>
-</ul>
-<small>The default. Cheap to produce. Costs you.</small>
-</div>
-
-<div class="panel panel-ok">
-<h4>HTML artifact in your browser</h4>
-<ul>
-<li>Glanceable. Eye picks the section.</li>
-<li>Color, shape, position do work.</li>
-<li>Real mermaid diagrams.</li>
-<li>Decision tables with one row highlighted.</li>
-<li>Code with <code>file:line</code> captions, not retyped.</li>
-</ul>
-<small>One self-contained <code>.html</code> file in <code>/tmp/in-html/</code>. Pico CSS, opened in your browser.</small>
-</div>
-</div>
-
-## Two modes — pick by direction of data flow
-
-<div class="flow">
-<svg viewBox="0 0 720 320" role="img" aria-label="Two-mode data flow: agent to viz HTML to you, you to feedback HTML to agent">
-  <defs>
-    <marker id="ih-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/>
-    </marker>
-  </defs>
-  <rect class="node node-agent"    x="20"  y="120" width="140" height="80" rx="10"/>
-  <text x="90" y="158">Agent</text>
-  <text class="sub" x="90" y="178">Claude Code</text>
-  <rect class="node node-viz"      x="280" y="20"  width="200" height="80" rx="10"/>
-  <text x="380" y="55">viz HTML page</text>
-  <text class="sub" x="380" y="74">diagrams, code, tables</text>
-  <text class="sub" x="380" y="90">read-only</text>
-  <rect class="node node-you"      x="560" y="120" width="140" height="80" rx="10"/>
-  <text x="630" y="158">You</text>
-  <text class="sub" x="630" y="178">tired eyes</text>
-  <rect class="node node-feedback" x="280" y="220" width="200" height="80" rx="10"/>
-  <text x="380" y="255">feedback panel</text>
-  <text class="sub" x="380" y="274">chips, sliders, drag-drop</text>
-  <text class="sub" x="380" y="290">interactive</text>
-  <path class="arrow"      d="M 130 120 Q 200 60 280 60"  marker-end="url(#ih-arrow)"/>
-  <text class="label" x="200" y="80">viz</text>
-  <path class="arrow arrow-dash" d="M 480 60 Q 560 60 600 120"  marker-end="url(#ih-arrow)"/>
-  <text class="label" x="540" y="80">eye flick</text>
-  <path class="arrow"      d="M 600 200 Q 560 260 480 260" marker-end="url(#ih-arrow)"/>
-  <text class="label" x="540" y="245">click chip / fill</text>
-  <path class="arrow"      d="M 280 260 Q 200 260 130 200" marker-end="url(#ih-arrow)"/>
-  <text class="label" x="200" y="245">JSON via /submit</text>
-</svg>
-</div>
-
-<div class="callout callout-why">
-<strong>The rule</strong>
-If the artifact only flows agent → you, it's Mode 1 (viz). If anything flows you → agent — one focused answer, an ordered list, a tagged config — it's Mode 2 (feedback). Both produce one <code>.html</code> file. Both open in your real browser.
-</div>
-
-## Mode 1 — a real viz artifact
-
-Here's an actual artifact the agent produced when I asked it to walk me through `gh-x-html`'s sandbox decision before I reviewed the ADR. **One file.** Mermaid flowchart up top, decision table in the middle, real code excerpt at the bottom, a "risk if regressed" callout pinned next to it.
-
-<img src={vizFold} alt="Screenshot of a Mode 1 in-html artifact rendering the gh-x-html iframe sandbox model — title, why-this callout, mermaid flowchart, and decision table" />
-
-<details>
-<summary>See the full artifact (the same thing as a five-screen markdown ADR would have been — but two scrolls)</summary>
-
-<img src={vizExample} alt="Full-page screenshot of the same Mode 1 artifact — flowchart, decision table, side-by-side same-origin vs opaque comparison, code excerpt, risk callout, and 'what's out of scope' details" />
-
-</details>
-
-## Mode 2 — a real feedback panel
-
-The other half. The agent needs *structured data back* from me in the same turn. It writes the HTML, runs a tiny bun server in the **foreground**, the browser opens, I click a chip or fill a form, I hit Submit, the server prints my answer as JSON to stdout, the Bash call returns, the agent keeps going — *all in one turn*.
-
-<img src={feedbackFold} alt="Screenshot of a Mode 2 in-html feedback panel — 'Customer or User?' question, glossary block, ambiguous code excerpt, four chip choices with Customer recommended in purple, and a pre-filled recommended-answer textarea" />
-
-<details>
-<summary>See the full panel (with talk-more drawer and action row)</summary>
-
-<img src={feedbackExample} alt="Full-page screenshot of the same Mode 2 panel including recommended-answer textarea, Submit / Talk more first / Copy-as-JSON actions" />
-
-</details>
-
-## Mode 2 was built for `grill-with-docs`
-
-<div class="callout callout-why">
-<strong>Where Mode 2 came from</strong>
-I built the feedback half of <code>in-html</code> specifically to feed <a href="https://github.com/ninyawee/skills">grill-with-docs</a> — the skill that stress-tests my plan against the project's existing terms and decisions one branch at a time. Plain-chat grilling broke down in two places, and Mode 2 fixes both.
-</div>
-
-<div class="grid-2">
-<div class="panel panel-ok">
-<h4>1. I need a clear idea of the frontend outcome</h4>
-<p style="font-size:.92em; margin:.25rem 0 .5rem;">
-When the agent is asking "should the empty state be a chip picker, a search box, or a single CTA?", typing words at it is a slow guess. Mode 2 lets the agent <em>render the candidate</em> — a real chip row, a real search input, a real button — right in the question panel. I tap the one that looks right. The frontend decision is made by <strong>looking</strong>, not by describing.
-</p>
-<small>Tangible UI > written intent. The decision settles in one fixation instead of three rounds of "no, more like…".</small>
-</div>
-
-<div class="panel panel-ok">
-<h4>2. Explaining a complex topic to me, fast</h4>
-<p style="font-size:.92em; margin:.25rem 0 .5rem;">
-When the branch we're grilling is non-trivial — a routing taxonomy, a billing-vs-auth boundary, a cache-invalidation rule — the agent needs to lay out <em>context</em> before asking the question. Mode 2 gives it the canvas: the glossary entry, the ambiguous code excerpt, the side-by-side, the decision matrix — all on the same page as the question. Reading and answering happen in one pass.
-</p>
-<small>The question and the context it needs share one fixation, not five paragraphs of scrolled prose.</small>
-</div>
-</div>
-
-The "Customer or User?" panel above is exactly this pattern — a real `grill-with-docs` turn that the agent rendered as an HTML page instead of typing into chat.
-
-## When markdown still fits, and when HTML wins
-
-<table class="decision">
-<thead>
-<tr><th>Surface</th><th>Best with</th><th>Why</th></tr>
-</thead>
-<tbody>
-<tr>
-  <td>Inline answer in chat</td>
-  <td><code>.md</code></td>
-  <td>One paragraph. No diagram needed. Don't open a browser tab for two sentences.</td>
-</tr>
-<tr>
-  <td>Diff, log, command output</td>
-  <td><code>.md</code></td>
-  <td>Already line-shaped. No structure to extract.</td>
-</tr>
-<tr class="recommended">
-  <td>Plan / design walkthrough</td>
-  <td><code>.html</code> (Mode 1)</td>
-  <td>Mermaid + decision table + code excerpts read in seconds, not minutes.</td>
-</tr>
-<tr class="recommended">
-  <td>Disambiguation / glossary pick</td>
-  <td><code>.html</code> (Mode 2)</td>
-  <td>Chips with a recommended answer beat typing the answer in chat.</td>
-</tr>
-<tr class="recommended">
-  <td>Status board / decision log / ADR</td>
-  <td><code>.html</code> (Mode 1)</td>
-  <td>Pill columns and side-by-side panels are the whole point.</td>
-</tr>
-<tr class="recommended">
-  <td>Shaping a config / taxonomy / priority list</td>
-  <td><code>.html</code> (Mode 2)</td>
-  <td>Drag-and-drop + sliders + chips fit the shape of the data.</td>
-</tr>
-</tbody>
-</table>
-
-## How I use it every day
-
-<div class="usage">
-
-<div class="chip-card">
-<strong>Plan review</strong>
-<span>"Show me, don't tell me." Mermaid + decision table + the actual diff. I read it in 30 seconds instead of five minutes.</span>
-</div>
-
-<div class="chip-card">
-<strong>Architecture decision</strong>
-<span>A flowchart for the data flow, a decision table for the options, a callout for the risk. Beats a 400-line ADR draft every time.</span>
-</div>
-
-<div class="chip-card">
-<strong>Grilling questions</strong>
-<span>The agent serves me a panel with chips and a pre-filled recommended answer. One click, I'm done, the turn keeps going.</span>
-</div>
-
-<div class="chip-card">
-<strong>Glossary disambiguation</strong>
-<span>"Customer or User?" The agent shows me both glossary entries side-by-side and the ambiguous code. Chip pick.</span>
-</div>
-
-<div class="chip-card">
-<strong>Status report</strong>
-<span>A table with green / yellow / red pills, not a paragraph that says "mostly green, some yellow."</span>
-</div>
-
-<div class="chip-card">
-<strong>Config shaping</strong>
-<span>The agent gives me the editor — sliders, ordered lists, chip pickers — instead of asking me to dictate the YAML.</span>
-</div>
-
-</div>
-
-## Why this matters more than it sounds
-
-<div class="callout callout-empathy">
-<strong>The real cost of cognitive fatigue</strong>
-When you're cognitively tired, you stop giving a fuck. You surrender — and the consequences happen to you instead of being understood.
-<br/><br/>
-That's what a wall of markdown does at the end of a long day. You're still reading the words. You've stopped catching the implications. The bug you'd have spotted at 10am ships at 4pm. The misalignment you'd have called out becomes the decision. <strong>The point of <code>in-html</code> isn't prettier docs — it's that you keep caring long enough to notice.</strong>
-</div>
-
-## Install + try it
-
-One line:
-
-```bash
-npx skills ninyawee/skills/in-html
-```
-
-In any Claude Code session: `/in-html`. Or just describe what you want shown — the skill should pick itself up. For Mode 2 you'll also need `bun` on your `PATH`.
-
-If you build a Mode 2 panel for something interesting — a custom config shaper, a tag picker, a HITL annotation flow — I'd love to see what shape your JSON ended up in.
-
-— Ben
-
-**Skill:** [`ninyawee/skills` → `skills/in-html`](https://github.com/ninyawee/skills/tree/main/skills/in-html) · **Sibling:** [gh-x-html](/blog/gh-x-html) · **Inspiration:** [Thariq Shihipar on How I AI](https://www.chatprd.ai/how-i-ai/claude-code-anthropic-thariq-shihipar-on-replacing-markdown-with-html), [plannotator](https://github.com/ninyawee/plannotator)
-
-{:else if lang === 'th'}
 
 <img src={og} alt="Cover แบบ clickbait: 'Stop reading markdown — your eyes will thank you.' พร้อมรูปเบนบนเวที TED ถือไมค์ และ pill ที่เขียนว่า '/in-html + /grill-with-docs'" />
 
@@ -623,7 +382,5 @@ npx skills ninyawee/skills/in-html
 — Ben
 
 **Skill:** [`ninyawee/skills` → `skills/in-html`](https://github.com/ninyawee/skills/tree/main/skills/in-html) · **โพสต์พี่น้อง:** [gh-x-html](/blog/gh-x-html) · **แรงบันดาลใจ:** [Thariq Shihipar on How I AI](https://www.chatprd.ai/how-i-ai/claude-code-anthropic-thariq-shihipar-on-replacing-markdown-with-html), [plannotator](https://github.com/ninyawee/plannotator)
-
-{/if}
 
 </div>

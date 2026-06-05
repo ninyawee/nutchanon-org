@@ -1,18 +1,18 @@
 ---
-title: "gh-x-html — GitHub Finally Plays Your Videos (and Your Playwright Reports)"
-description: "A Chrome extension that turns GitHub comments into a real medium for UI verification — third-party video plays inline, Playwright HTML reports render live, and rich x-html fences become sandboxed iframes. Stop posting screenshots and Google Drive links; ship the artifact directly inside the PR."
+title: "gh-x-html — ในที่สุด GitHub ก็เล่นวิดีโอให้คุณ (และ Playwright report ด้วย)"
+description: "Chrome extension ที่เปลี่ยน comment ใน GitHub ให้เป็นสื่อจริงสำหรับ verify UI — วิดีโอจาก host ภายนอกเล่น inline, Playwright HTML report render สดๆ, และ x-html fence กลายเป็น sandboxed iframe เลิกโพสต์ screenshot กับ Google Drive link แล้วส่ง artifact ตรงเข้าไปใน PR เลย"
 date: '2026-05-27'
 image: /blog/gh-x-html/og.png
 published: true
+lang: th
 ---
 
 <script>
-	import og from './images/gh-x-html/og.png?format=webp';
-	import mdVsHtml from './images/gh-x-html/md-vs-html.png?format=webp';
-	import flexInContext from './images/gh-x-html/flex-in-context.png?format=webp';
-	import flexRender from './images/gh-x-html/flex-render.png?format=webp';
-	import icon from './images/gh-x-html/icon.png?format=webp';
-	let lang = $state('th');
+	import og from '../images/gh-x-html/og.png?format=webp';
+	import mdVsHtml from '../images/gh-x-html/md-vs-html.png?format=webp';
+	import flexInContext from '../images/gh-x-html/flex-in-context.png?format=webp';
+	import flexRender from '../images/gh-x-html/flex-render.png?format=webp';
+	import icon from '../images/gh-x-html/icon.png?format=webp';
 </script>
 
 <style>
@@ -115,172 +115,7 @@ published: true
 }
 </style>
 
-<div style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
-	<button onclick={() => lang = 'en'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'en' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">EN</button>
-	<button onclick={() => lang = 'th'} style="padding: 0.25rem 0.75rem; border-radius: 4px; border: 1px solid var(--border, #333); background: {lang === 'th' ? 'var(--accent, #e2e8f0)' : 'transparent'}; cursor: pointer;">TH</button>
-</div>
-
 <div class="gx-post">
-
-{#if lang === 'en'}
-
-<img src={og} alt="Clickbait cover: 'GitHub finally plays your videos.' with Ben on stage holding a mic, and a pill that reads '/gh-x-html — Chrome extension'" />
-
-<a class="ship-badge" href="https://github.com/ninyawee/gh-x-html" target="_blank" rel="noopener"><code>gh-x-html</code> is live on GitHub &mdash; load unpacked, Chrome Web Store listing in review</a>
-
-<div class="callout callout-empathy">
-<strong>The real reason I built this</strong>
-I didn't build <code>gh-x-html</code> for HTML showcases. I built it because <strong>I post videos in GitHub issues all day</strong>. A Playwright recording of a UI bug. A screen capture of the new flow. A 12-second clip of the broken modal. Today those go to Google Drive, get a shareable link, get pasted as a markdown link, and then every reviewer clicks out, waits for Drive to load, watches, comes back. Friction stacks. Reviews drag. <strong>The fix is dumb: render the video where it was posted.</strong>
-</div>
-
-## Same content. As markdown, then as gh-x-html.
-
-This is the comparison that matters. **Same Q2 release status** — same numbers, same options, same decision — written two ways. Left: the best plain markdown can do in a GitHub comment. Right: the same content as an `x-html` fence. Both screenshots came out of [issue #5](https://github.com/ninyawee/gh-x-html/issues/5), same browser tab.
-
-<img src={mdVsHtml} alt="Side-by-side Playwright capture of issue #5. Left: Section A — the Q2 release status expressed as plain markdown (headings, bullets, plain table, checkbox list, text disclaimer 'sparkline cannot be rendered, readers must imagine the curve'). Right: Section B — the same content rendered through gh-x-html as a live dashboard with gradient title, animated progress bars, real SVG sparkline, chip picker, color-coded decision table with the recommended row starred and tinted green, and a 5-node dependency-flow diagram with arrowed boxes." />
-
-The markdown side is the **ceiling** of what GitHub natively renders for this content. Headings, bullets, an unstyled table, checkboxes for the vote, and a literal *"Sparkline cannot be rendered in markdown — readers must imagine the curve"* disclaimer. That's not a strawman; that's actually the best the format can do.
-
-The HTML side is the **same information** as a sandboxed iframe — color, shape, position, motion all doing real work. Decision time drops from a scroll-and-re-read to a single glance.
-
-## What it does, in one frame
-
-<div class="grid-2">
-<div class="panel panel-bad">
-<h4>Without <code>gh-x-html</code></h4>
-<ul>
-<li>External video → markdown link → Drive → context switch</li>
-<li>Playwright HTML report → zip → upload elsewhere → email link</li>
-<li>Rich status board → screenshot → blurry → out of date the next day</li>
-<li>Live demo → recording → upload → link → click → wait</li>
-</ul>
-<small>The medium fights the content. Every viewer pays the friction.</small>
-</div>
-
-<div class="panel panel-ok">
-<h4>With <code>gh-x-html</code></h4>
-<ul>
-<li>External <code>.mp4</code> / <code>.webm</code> / <code>.mp3</code> URLs <strong>play inline</strong> — sandboxed iframe escapes GitHub's CSP</li>
-<li>Drop a Playwright HTML report into an <code>x-html</code> fence; reviewer scrolls through it inside the PR</li>
-<li>Status dashboards, ADR mockups, design comps — render live in the comment they were posted in</li>
-<li>Author-allowlist gated. Sandboxed iframe. No GitHub cookies leak to fence scripts</li>
-</ul>
-<small>The PR is the artifact. No context switch. No re-upload.</small>
-</div>
-</div>
-
-## What the fence can do — one real example
-
-This is one fenced code block in one GitHub issue comment. Inside it: a Q2 release dashboard with animated progress bars, a sparkline of 30-day request volume, a chip picker, a decision table with the recommended row highlighted, a dependency-flow diagram, and an Acknowledge CTA — all rendered inside a sandboxed iframe with no `allow-same-origin` (opaque origin, no GitHub cookies):
-
-<img src={flexInContext} alt="Real Playwright screenshot — GitHub issue comment with intro prose, then the rich Q2 release dashboard rendered inline: gradient header, three status cards (Auth 98%, Payments 76%, Search 41%), a 30-day request-volume sparkline, a chip picker, a backfill-strategy decision table with option B recommended, a dependency-flow diagram, and an Acknowledge button" />
-
-Tight crop on just the rendered fence:
-
-<img src={flexRender} alt="Tight crop of the rendered Q2 dashboard iframe — animated cyan-magenta progress bars, sparkline with a magenta dot at the peak, chip row with 'Payments retries' highlighted, decision table with the shadow-index option marked recommended, and a 5-node dependency graph" />
-
-Without the extension, every reviewer sees this exact same content as a wall of HTML source. The sanitizer wins, the meaning is lost.
-
-## The use cases I actually built it for
-
-<div class="usage">
-
-<div class="chip-card">
-<strong>Playwright HTML reports</strong>
-<span>Drop the report's HTML into an <code>x-html</code> fence. Failures, screenshots, traces — all browsable inside the PR. No Vercel deploy preview, no Drive link.</span>
-</div>
-
-<div class="chip-card">
-<strong>Bug recordings</strong>
-<span>Screen capture lands at <code>r2.dev/clip.mp4</code>. Paste the URL. Reviewer scrolls to it, sees the bug play. Zero context switch.</span>
-</div>
-
-<div class="chip-card">
-<strong>Visual regression diffs</strong>
-<span>Two screenshots + a slider. Reviewer drags. Or render the diff overlay live. The fence is just HTML — do what the comparison needs.</span>
-</div>
-
-<div class="chip-card">
-<strong>Status / release boards</strong>
-<span>Real-time-ish pills with retry counts and p99s. Embed in the release-tracking issue. Beats a bullet list nobody updates.</span>
-</div>
-
-<div class="chip-card">
-<strong>ADR mockups</strong>
-<span>A flow diagram, a decision table, a code excerpt with file:line caption. The ADR becomes a page, not 800 lines of bullets.</span>
-</div>
-
-<div class="chip-card">
-<strong>Demo links that actually work</strong>
-<span>A small interactive prototype. Sandboxed — author scripts can run but get no GitHub cookies. Like an embedded CodePen, in a comment.</span>
-</div>
-
-</div>
-
-## When markdown still fits — when gh-x-html wins
-
-<table class="decision">
-<thead>
-<tr><th>Comment content</th><th>Best with</th><th>Why</th></tr>
-</thead>
-<tbody>
-<tr>
-  <td>Quick reply / discussion</td>
-  <td>plain markdown</td>
-  <td>One paragraph. No need to open the rendering machinery.</td>
-</tr>
-<tr>
-  <td>Code diff inline</td>
-  <td>plain markdown</td>
-  <td>GitHub already does this beautifully. Don't reach for HTML.</td>
-</tr>
-<tr class="recommended">
-  <td>Video of a bug / regression / new feature</td>
-  <td><code>gh-x-html</code></td>
-  <td>Third-party <code>.mp4</code> URLs play inline. The viewer never leaves the issue.</td>
-</tr>
-<tr class="recommended">
-  <td>Playwright report / test trace</td>
-  <td><code>gh-x-html</code></td>
-  <td>The whole report renders in the PR — failures, screenshots, traces, all browsable.</td>
-</tr>
-<tr class="recommended">
-  <td>Status dashboard / release board</td>
-  <td><code>gh-x-html</code></td>
-  <td>Real color, real pills, a sparkline. Beats a stale bullet list.</td>
-</tr>
-<tr class="recommended">
-  <td>ADR / design walkthrough</td>
-  <td><code>gh-x-html</code></td>
-  <td>Diagram + table + code excerpts in one glanceable artifact. The decision lands faster.</td>
-</tr>
-</tbody>
-</table>
-
-## The trust model, in one paragraph
-
-The extension only rewrites comments authored by GitHub logins in your local allowlist (stored in `chrome.storage.sync`, seeded with your own login on install). The sandboxed iframe is `allow-scripts allow-popups allow-popups-to-escape-sandbox` — **never** `allow-same-origin`, which would be a sandbox escape. Author scripts can run inside the iframe but the iframe is an opaque origin: no GitHub cookies, no parent DOM access, no top-frame navigation. Full reasoning in [ADR-0002](https://github.com/ninyawee/gh-x-html/blob/main/docs/adr/0002-sandbox-allow-scripts-no-same-origin.md) and [ADR-0003](https://github.com/ninyawee/gh-x-html/blob/main/docs/adr/0003-trust-model-author-allowlist.md).
-
-## Install + try it
-
-```bash
-git clone https://github.com/ninyawee/gh-x-html
-# chrome://extensions → Developer mode → Load unpacked → pick the directory
-```
-
-The allowlist seeds with your GitHub login on first install. Open any issue or PR, drop an `x-html` fence in a comment, reload — your fence becomes a live rendered iframe. Add coworkers via the popup as you onboard the team.
-
-A Chrome Web Store listing is in review; install via "Load unpacked" until then.
-
-<p align="center">
-  <img src={icon} alt="gh-x-html icon" width="96" height="96" />
-</p>
-
-— Ben
-
-**Repo:** [`ninyawee/gh-x-html`](https://github.com/ninyawee/gh-x-html) · **Showcase issue:** [#4 — flex what gh-x-html can do](https://github.com/ninyawee/gh-x-html/issues/4) · **Sibling:** [in-html](/blog/in-html)
-
-{:else if lang === 'th'}
 
 <img src={og} alt="Cover แบบ clickbait: 'GitHub finally plays your videos.' พร้อมรูปเบนบนเวที TED ถือไมค์ และ pill ที่เขียนว่า '/gh-x-html — Chrome extension'" />
 
@@ -437,7 +272,5 @@ Chrome Web Store listing อยู่ใน review ระหว่างนี�
 — Ben
 
 **Repo:** [`ninyawee/gh-x-html`](https://github.com/ninyawee/gh-x-html) · **Showcase issue:** [#4 — flex what gh-x-html can do](https://github.com/ninyawee/gh-x-html/issues/4) · **โพสต์พี่น้อง:** [in-html](/blog/in-html)
-
-{/if}
 
 </div>

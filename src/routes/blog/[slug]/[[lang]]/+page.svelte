@@ -2,27 +2,39 @@
 	import type { PageData } from './$types';
 	import { copyCode } from '$lib/copy-code.svelte';
 	import { lightbox } from '$lib/lightbox.svelte';
+	import { postPath } from '$lib/i18n';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	const SITE = 'https://nutchanon.org';
+	let canonical = $derived(SITE + postPath(data.slug, data.lang, data.langs));
 </script>
 
 <svelte:head>
 	<title>{data.meta.title} - Nutchanon</title>
 	<meta name="description" content={data.meta.description} />
+	<link rel="canonical" href={canonical} />
+	{#each data.langs as l (l)}
+		<link rel="alternate" hreflang={l} href={SITE + postPath(data.slug, l, data.langs)} />
+	{/each}
 	<meta property="og:title" content={data.meta.title} />
 	<meta property="og:description" content={data.meta.description} />
 	<meta property="og:type" content="article" />
 	{#if data.meta.image}
-		<meta property="og:image" content={'https://nutchanon.org' + data.meta.image} />
+		<meta property="og:image" content={SITE + data.meta.image} />
 		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:image" content={'https://nutchanon.org' + data.meta.image} />
+		<meta name="twitter:image" content={SITE + data.meta.image} />
 	{/if}
 	<meta name="twitter:title" content={data.meta.title} />
 	<meta name="twitter:description" content={data.meta.description} />
 </svelte:head>
 
-<article>
+<article lang={data.lang}>
 	<header>
+		{#if data.langs.length > 1}
+			<LanguageSwitcher slug={data.slug} lang={data.lang} langs={data.langs} />
+		{/if}
 		<h1>{data.meta.title}</h1>
 		<time datetime={data.meta.date}>{formatDate(data.meta.date)}</time>
 	</header>
@@ -55,6 +67,10 @@
 		margin-bottom: 2rem;
 		padding-bottom: 1.5rem;
 		border-bottom: 1px solid var(--color-border);
+	}
+
+	header :global(.lang-switch) {
+		margin-bottom: 1.25rem;
 	}
 
 	header h1 {
