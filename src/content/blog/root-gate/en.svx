@@ -1,0 +1,140 @@
+---
+title: "root-gate: From 'Stop Asking for My Password' to a Native Root-Access Checkpoint"
+description: "A one-line ask to reduce sudo prompts turned into a full rebuild: why the password kept re-asking, an AI-generated per-command risk explainer, and a native Rust dialog styled like the root shell it's guarding. Published as an open-source tool."
+date: '2026-07-14'
+image: /blog/root-gate/screenshot.png
+published: true
+lang: en
+---
+
+<script>
+	import screenshot from '../images/root-gate/screenshot.png?format=webp';
+	import zenityConfirm from '../images/root-gate/zenity-confirm-old.png?format=webp';
+</script>
+
+<style>
+.rg-post {
+  --rg-bg: #0a0b0a;
+  --rg-panel: #111310;
+  --rg-line: #23261f;
+  --rg-ink: #e4e7e2;
+  --rg-ink-dim: #8a9088;
+  --rg-accent: #7c8cff;
+  --rg-low: #2f9e63;
+  --rg-medium: #b3790a;
+  --rg-high: #c8402f;
+}
+@media (prefers-color-scheme: dark) {
+  .rg-post { --rg-low: #6fcf97; --rg-medium: #f2b84b; --rg-high: #f2685c; }
+}
+.rg-post .callout {
+  border-left: 3px solid var(--rg-accent);
+  background: rgba(124, 140, 255, 0.08);
+  padding: 1rem 1.2rem;
+  border-radius: .35rem;
+  margin: 1.5rem 0;
+}
+.rg-post .callout strong {
+  display: block; margin-bottom: .25rem; font-size: .85em;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--rg-accent);
+}
+.rg-post .callout-tradeoff { border-left-color: var(--rg-medium); background: rgba(179, 121, 10, 0.07); }
+.rg-post .callout-tradeoff strong { color: var(--rg-medium); }
+@media (prefers-color-scheme: dark) {
+  .rg-post .callout-tradeoff { background: rgba(242, 184, 75, 0.07); }
+}
+
+.rg-post .compare {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0;
+}
+@media (max-width: 720px) { .rg-post .compare { grid-template-columns: 1fr; } }
+.rg-post .compare figure { margin: 0; }
+.rg-post .compare img { border-radius: .5rem; border: 1px solid rgba(127,127,127,.25); width: 100%; }
+.rg-post .compare figcaption { font-size: .85em; opacity: .75; margin-top: .4rem; }
+
+.rg-post ul.gotchas li { margin-bottom: .7rem; }
+.rg-post ul.gotchas code { font-size: .92em; }
+
+.rg-post .hero-video {
+  width: 100%;
+  border-radius: .6rem;
+  border: 1px solid var(--rg-line);
+  box-shadow: 0 0 0 1px rgba(124, 140, 255, 0.15), 0 12px 40px -12px rgba(0,0,0,.5);
+  margin: 1.5rem 0;
+  display: block;
+}
+</style>
+
+<div class="rg-post">
+
+Sequel to [part one](/blog/claude-code-sudo-hook): a hundred lines of JS and a zenity popup that stopped Claude Code from running `sudo $(which claude)` directly, but asked for my password every single time. The ask this round was "reduce the sudo asks." It turned into a full rebuild — keep the Allow/Block confirmation on *every* call, kill the repeat password prompt, add an AI-generated risk explanation, and replace the generic popup with something purpose-built. Here it is live — a real `sudo whoami` round trip, hovered — now published as **[root-gate](https://github.com/ninyawee/root-gate)** (MIT):
+
+<video class="hero-video" src="/blog/root-gate/sudo-gate.mp4" autoplay muted loop playsinline poster={screenshot}>
+</video>
+
+## Key idea 1 — the password wasn't the problem, the process was
+
+sudo already caches your password for 15 minutes (`timestamp_timeout`, on by default). It kept re-asking anyway because that cache is keyed on `timestamp_type` — `tty`, falling back to `ppid`. Each hook call is a fresh, detached process with no tty, and a new parent shell every time, so no two calls ever share a `ppid` either. sudo had no way to recognize "same session as 30 seconds ago."
+
+The fix was one sudoers line:
+
+```
+# /etc/sudoers.d/root-gate-timestamp
+Defaults timestamp_type=global
+```
+
+`global` keys the cache to your login instead of tty/ppid. Validate with `visudo -c -f` before installing — a bad `/etc/sudoers.d/` entry can lock you out of sudo entirely.
+
+<div class="callout callout-tradeoff">
+<strong>The tradeoff, stated plainly</strong>
+<code>timestamp_type=global</code> isn't scoped to Claude Code — it widens sudo's passwordless window to <em>any</em> terminal on the machine for ~15 minutes after any successful sudo call. Real, machine-wide policy change, not an app setting. Skip it if you'd rather keep per-terminal caching; the confirmation dialog works either way.
+</div>
+
+(First instinct was a lighter fix — one shared pty that every hook call reattaches to, no sudoers change needed. Doesn't work: a pty only becomes a *second* process's controlling terminal if that process claims it first, so a holder process squatting on the pty just makes sudo see "no terminal" for everyone else too. The one-line sudoers fix beat it easily.)
+
+## Key idea 2 — let the dialog explain itself
+
+Raw command text doesn't help you decide — `curl … | bash` and `apt update` are both just strings. root-gate runs a fast deterministic regex scan for destructive patterns (`rm -rf /`, `dd of=/dev/*`, curl-into-shell) that always runs, backed by a `claude -p` explainer that adds a risk level, write paths, and a per-segment hover explanation — that's the tooltip in the demo up top.
+
+The AI layer is best-effort — the deterministic scan always covers you if `claude -p` fails or times out (~14s + a small API cost per call, a real tax worth naming).
+
+## Key idea 3 — from zenity, to a native window
+
+<div class="compare">
+<figure>
+<img src={zenityConfirm} alt="Old dialog: a plain light GTK zenity popup titled 'Claude Code: sudo confirmation', showing the raw command as monospace text with Block and Allow buttons" />
+<figcaption>Before — plain zenity, part one</figcaption>
+</figure>
+<figure>
+<img src={screenshot} alt="New dialog: dark terminal-themed native window with risk tags, flagged bullets, and keyboard-hinted Block/Allow buttons" />
+<figcaption>After — native wry/tao window, this post</figcaption>
+</figure>
+</div>
+
+Zenity couldn't do hover tooltips or structured risk. A browser tab could, but felt wrong — "Claude just opened my browser" mid-task. What shipped is a ~1.5MB standalone Rust binary ([wry](https://github.com/tauri-apps/wry) + [tao](https://github.com/tauri-apps/tao), no Electron): same HTML/CSS/JS richness, packaged as a real native window. Design leans into the subject instead of generic dialog chrome — monospace throughout, an oversized ghost `#` watermark, and `[Y] Allow` / `[N] Block` keyboard hints mirroring the shell's own `Continue? [y/N]`.
+
+## Worth remembering
+
+- `claude -p --tools "" "<prompt>"` silently eats the prompt — `--tools` is variadic, so the empty value swallows the next argv token too. Use `--tools=` (equals form) instead.
+- `--tools=` with nothing after it is the clean way to run `claude -p` as a pure text generator with zero tool access — handy inside a hook, since no tools means no risk of recursively triggering the same hook.
+- A stray old `rustc` earlier on `$PATH` than `~/.cargo/bin` can silently shadow your rustup toolchain even when `cargo` resolves correctly — prepend `$(rustup which cargo | xargs dirname)` to `$PATH` for builds.
+
+## Not fixed yet
+
+The sudo-detection regex is a substring match, not a real shell parser — it can false-positive on any command that happens to contain literal `|sudo` text, even inside a quoted string. And no one but me has reviewed the final hook code — tested end-to-end by hand, not yet by a second pair of eyes.
+
+## Try it
+
+```bash
+git clone https://github.com/ninyawee/root-gate.git
+cd root-gate
+./build.sh
+```
+
+Full install steps and the sudoers config are in the [README](https://github.com/ninyawee/root-gate) — MIT licensed.
+
+— Ben
+
+**Repo:** [`ninyawee/root-gate`](https://github.com/ninyawee/root-gate) · **Prior art:** [Don't sudo claude — part one](/blog/claude-code-sudo-hook)
+
+</div>
