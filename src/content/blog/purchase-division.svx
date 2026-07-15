@@ -12,28 +12,407 @@ image: /blog/purchase-division/og.png
 	import ledgerDetail from './images/purchase-division/ledger-detail.png?format=webp';
 </script>
 
-<img src={ogImage} alt="ภาพประกอบสไตล์อนิเมะ ผมทำท่าดันแว่น มีสติกเกอร์โลโก้ 1Password, Shopee, Homepro, ThaiWatsadu, Lazada ล้อมรอบ" />
+<svelte:head>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Chonburi&family=JetBrains+Mono:wght@400;500;600&display=swap"
+		rel="stylesheet"
+	/>
+</svelte:head>
 
-เมื่อก่อนซื้อของออนไลน์ ผมนั่งทำเองทุกขั้นตอน เปิด Shopee บ้าง Lazada บ้าง ThaiWatsadu บ้าง หาของ เทียบราคา ใส่ตะกร้า เดี๋ยวนี้ไม่ทำแล้วครับ มีฝ่ายจัดซื้อประจำบ้านทำแทนให้ — เป็น AI agent ตัวหนึ่ง
+<div class="case-file">
 
-โจทย์แรกที่ต้องคิดก่อนปล่อยให้ agent ทำงานคือเรื่อง credential พอจะให้ล็อกอินเว็บพวกนี้แทนเรา ก็ต้องมีรหัสผ่านให้ใช้ แล้วจะให้เข้าถึงแค่ไหนดี? ให้เห็นทั้ง 1Password account เลยหรือ — เก็บทุกอย่างตั้งแต่บัญชีธนาคารยันรหัส router ไว้ในนั้น ให้ agent ตัวเดียวเห็นหมดมันเสี่ยงเกินไป
+	<div class="masthead">
+		<div class="masthead-row">
+			<span class="kicker">บันทึกภายใน · แบบฟอร์ม PD-1</span>
+			<span class="stamp">ขอบเขต 5 ร้านค้า</span>
+		</div>
+		<p class="dek">ยกกุญแจร้านค้าออนไลน์ให้ AI ถือแทน ตัดสิทธิ์ให้เหลือน้อยที่สุด แล้วปล่อยให้ทำงานจริง</p>
+		<dl class="memo-fields">
+			<div><dt>ผู้ยื่น</dt><dd>เบน (ณัฐชนน น.)</dd></div>
+			<div><dt>เปิดแฟ้ม</dt><dd>16 ก.ค. 2569</dd></div>
+			<div><dt>ร้านค้าในสิทธิ์</dt><dd>5 ร้าน</dd></div>
+			<div><dt>อำนาจสูงสุด</dt><dd>หยุดที่ตะกร้า</dd></div>
+		</dl>
+	</div>
 
-เลยแยก vault ใหม่ขึ้นมาต่างหาก ชื่อ "Thura AI" ใส่แค่ล็อกอินเว็บช้อปปิ้งที่ตั้งใจให้ใช้จริง ๆ — Shopee, Lazada, Tescolotus, makro pro, ThaiWatsadu แล้วสร้าง service-account token ผูกไว้กับ vault นี้ vault เดียว ตัดสิทธิ์ทุกอย่างนอกนั้นทิ้งหมด ต่อให้ token หลุดไปวันหนึ่ง ก็เห็นได้แค่ร้านค้าที่ตั้งใจให้เห็นเท่านั้น ไม่โยงไปแตะของอย่างอื่นในบัญชีเลย
+	<figure class="exhibit exhibit-cover">
+		<img src={ogImage} alt="ภาพประกอบสไตล์อนิเมะ ผมทำท่าดันแว่น มีสติกเกอร์โลโก้ 1Password, Shopee, Homepro, ThaiWatsadu, Lazada ล้อมรอบ" />
+		<figcaption><span class="ex-tag">แนบ 0</span>ทีมจัดซื้อ (ตัวจริง) กับร้านค้าในสังกัด</figcaption>
+	</figure>
 
-พอ credential แยกสัดส่วนเรียบร้อย ที่เหลือก็คือให้ทำงานจริง — ต่อเข้า Chrome ผ่าน MCP โดยใช้ session ที่ผมล็อกอินอยู่แล้วในเบราว์เซอร์ตัวเอง ไม่ต้องเปิด browser แยกใหม่ แล้วมี skill ชื่อ `/shopping` คอยกำกับทุกขั้นตอน ดึงรหัสจาก vault มาเข้าเว็บ ค้นของตามที่สั่ง เทียบตัวเลือก ใส่ตะกร้าให้
+	<nav class="index" aria-label="สารบัญ">
+		<a href="#problem"><span class="i-num">01</span>โจทย์</a>
+		<a href="#fix"><span class="i-num">02</span>ทางออก</a>
+		<a href="#work"><span class="i-num">03</span>ลงมือจริง</a>
+		<a href="#twist"><span class="i-num">04</span>พลิกกลับ</a>
+	</nav>
 
-ส่วนที่ชอบที่สุดคือมันหยุดแค่ตรงใส่ตะกร้า ไม่กดจ่ายเงินต่อเองเด็ดขาด ต่อให้ของพร้อม ราคาโอเคหมดแล้ว ก็ยังรอให้ผมมาเช็คแล้วกดจ่ายเองอยู่ดี — เส้นแบ่งนี้ตั้งใจวางไว้ตั้งแต่ต้น ไม่ใช่ข้อจำกัดทางเทคนิคที่บังเอิญออกมาเป็นแบบนั้น
+	<div class="prose">
 
-เคสท่อ PE ที่ยกมาเล่านี้ เริ่มจากผมพิมพ์สั้น ๆ ประโยคเดียวว่า `i want a food grade pipe for my xiaomi water filter tap. see my shopee history in email` agent เปิดเมลไปไล่หาใบสั่งซื้อ Shopee เก่าก่อนเลย เจอทั้งเลขคำสั่งซื้อและวันที่ที่สั่งเครื่องกรองน้ำตัวนี้ไว้ ถึงค่อยเอาข้อมูลนั้นไปเทียบกับของที่หาเจอในแต่ละเว็บต่อ
+		<section id="problem">
+			<h2><span class="h-num">01</span>โจทย์</h2>
+			<p>เมื่อก่อนซื้อของออนไลน์ ผมนั่งทำเองทุกขั้นตอน เปิด Shopee บ้าง Lazada บ้าง ThaiWatsadu บ้าง หาของ เทียบราคา ใส่ตะกร้า เดี๋ยวนี้ไม่ทำแล้วครับ มีฝ่ายจัดซื้อประจำบ้านทำแทนให้ — เป็น AI agent ตัวหนึ่ง</p>
+			<p>โจทย์แรกที่ต้องคิดก่อนปล่อยให้ agent ทำงานคือเรื่อง credential พอจะให้ล็อกอินเว็บพวกนี้แทนเรา ก็ต้องมีรหัสผ่านให้ใช้ แล้วจะให้เข้าถึงแค่ไหนดี? ให้เห็นทั้ง 1Password account เลยหรือ — เก็บทุกอย่างตั้งแต่บัญชีธนาคารยันรหัส router ไว้ในนั้น ให้ agent ตัวเดียวเห็นหมดมันเสี่ยงเกินไป</p>
+		</section>
 
-ตอนเห็น terminal ไล่หาท่อ PE เทียบราคาข้าม 3 เว็บ ใส่ของลงตะกร้าจนครบ ก็อดคิดไม่ได้ว่านี่แหละฝ่ายจัดซื้อของบ้านตัวจริง แค่ไม่ต้องจ่ายเงินเดือนให้ครับ
+		<section id="fix">
+			<h2><span class="h-num">02</span>ทางออก</h2>
+			<p>เลยแยก vault ใหม่ขึ้นมาต่างหาก ชื่อ "Thura AI" ใส่แค่ล็อกอินเว็บช้อปปิ้งที่ตั้งใจให้ใช้จริง ๆ — Shopee, Lazada, Tescolotus, makro pro, ThaiWatsadu แล้วสร้าง service-account token ผูกไว้กับ vault นี้ vault เดียว ตัดสิทธิ์ทุกอย่างนอกนั้นทิ้งหมด ต่อให้ token หลุดไปวันหนึ่ง ก็เห็นได้แค่ร้านค้าที่ตั้งใจให้เห็นเท่านั้น ไม่โยงไปแตะของอย่างอื่นในบัญชีเลย</p>
+			<p>พอ credential แยกสัดส่วนเรียบร้อย ที่เหลือก็คือให้ทำงานจริง — ต่อเข้า Chrome ผ่าน MCP โดยใช้ session ที่ผมล็อกอินอยู่แล้วในเบราว์เซอร์ตัวเอง ไม่ต้องเปิด browser แยกใหม่ แล้วมี skill ชื่อ <code>/shopping</code> คอยกำกับทุกขั้นตอน ดึงรหัสจาก vault มาเข้าเว็บ ค้นของตามที่สั่ง เทียบตัวเลือก ใส่ตะกร้าให้</p>
+			<p>ส่วนที่ชอบที่สุดคือมันหยุดแค่ตรงใส่ตะกร้า ไม่กดจ่ายเงินต่อเองเด็ดขาด ต่อให้ของพร้อม ราคาโอเคหมดแล้ว ก็ยังรอให้ผมมาเช็คแล้วกดจ่ายเองอยู่ดี — เส้นแบ่งนี้ตั้งใจวางไว้ตั้งแต่ต้น ไม่ใช่ข้อจำกัดทางเทคนิคที่บังเอิญออกมาเป็นแบบนั้น</p>
+		</section>
 
-เคสท่อ PE ที่ยกตัวอย่างไว้ข้างบนยังไม่จบง่าย ๆ แบบนั้นครับ ตอนแรก agent เลือกท่อซิลิโคนจาก Lazada รหัส OT331 ขนาด ID6×OD12mm สั่งไปแล้วด้วย แต่พอเช็กสเปกซ้ำถึงเจอว่าตัวเลข 12mm ที่ยึดไว้ตั้งแต่ต้นเข้าใจผิด — มันคือเส้นผ่านศูนย์กลาง**นอก**ของหัวก๊อกเครื่องกรองน้ำ ไม่ใช่ขนาดท่อ ท่อที่ใช้ได้จริงต้องมีเส้นผ่านศูนย์กลาง**ใน** (ID) ไม่ต่ำกว่า 12mm ถึงจะสวมหัวก๊อกพอดี ไม่ใช่ OD 12mm แบบที่เข้าใจตอนแรก
+		<section id="work">
+			<h2><span class="h-num">03</span>ลงมือจริง</h2>
+			<p>เคสท่อ PE ที่ยกมาเล่านี้ เริ่มจากผมพิมพ์สั้น ๆ ประโยคเดียวว่า <code>i want a food grade pipe for my xiaomi water filter tap. see my shopee history in email</code> agent เปิดเมลไปไล่หาใบสั่งซื้อ Shopee เก่าก่อนเลย เจอทั้งเลขคำสั่งซื้อและวันที่ที่สั่งเครื่องกรองน้ำตัวนี้ไว้ ถึงค่อยเอาข้อมูลนั้นไปเทียบกับของที่หาเจอในแต่ละเว็บต่อ</p>
+			<p>ตอนเห็น terminal ไล่หาท่อ PE เทียบราคาข้าม 3 เว็บ ใส่ของลงตะกร้าจนครบ ก็อดคิดไม่ได้ว่านี่แหละฝ่ายจัดซื้อของบ้านตัวจริง แค่ไม่ต้องจ่ายเงินเดือนให้ครับ</p>
+		</section>
 
-<img src={ledgerDecision} alt="ตารางเทียบตัวเลือกท่อทั้งหมด พร้อมการ์ดตัวที่เลือกจริงและแผนภาพวัด ID/OD" />
+		<section id="twist">
+			<h2><span class="h-num">04</span>พลิกกลับ</h2>
 
-ของที่สั่งไปก่อนหน้าเลยผิดสเปก agent ถอดออกจากตะกร้า ไล่หาใหม่ในโปรดักต์ไลน์เดียวกัน จนเจอรุ่น ID10×OD14mm ที่สวมหัวก๊อกได้จริง สั่งไปแล้ว รอแค่ใบปะหน้าพัสดุ
+			<div class="correction">
+				<p class="correction-label">แก้สเปกระหว่างทาง</p>
+				<p>เคสท่อ PE ที่ยกตัวอย่างไว้ข้างบนยังไม่จบง่าย ๆ แบบนั้นครับ ตอนแรก agent เลือกท่อซิลิโคนจาก Lazada รหัส OT331 ขนาด ID6×OD12mm ใส่ตะกร้าไปแล้วด้วย แต่พอเช็กสเปกซ้ำถึงเจอว่าตัวเลข 12mm ที่ยึดไว้ตั้งแต่ต้นเข้าใจผิด — มันคือเส้นผ่านศูนย์กลาง<strong>นอก</strong>ของหัวก๊อกเครื่องกรองน้ำ ไม่ใช่ขนาดท่อ ท่อที่ใช้ได้จริงต้องมีเส้นผ่านศูนย์กลาง<strong>ใน</strong> (ID) ไม่ต่ำกว่า 12mm ถึงจะสวมหัวก๊อกพอดี ไม่ใช่ OD 12mm แบบที่เข้าใจตอนแรก</p>
+			</div>
 
-<img src={ledgerDetail} alt="รายละเอียดใบขอซื้อ REQ-001 พร้อมบันทึกการจัดหาและตัวที่เลือกจริงหลังแก้สเปก" />
+			<figure class="exhibit">
+				<img src={ledgerDecision} alt="ตารางเทียบตัวเลือกท่อทั้งหมด พร้อมการ์ดตัวที่เลือกจริงและแผนภาพวัด ID/OD" />
+				<figcaption><span class="ex-tag">แนบ 1</span>ตารางเทียบตัวเลือกท่อ พร้อมจุดที่เลือกจริง</figcaption>
+			</figure>
 
-ดูฉบับเต็มแบบสด ๆ ได้ที่ [ฝ่ายจัดซื้อประจำบ้าน](https://claude.ai/code/artifact/15c6b372-c30d-441e-9cd8-85d78231117a) — เอกสารนี้อัปเดตตัวเองทุกครั้งที่มีใบขอซื้อใหม่เข้าคิว
+			<p>ของที่ใส่ตะกร้าไปก่อนหน้าเลยผิดสเปก agent ถอดออกจากตะกร้า ไล่หาใหม่ในโปรดักต์ไลน์เดียวกัน จนเจอรุ่น ID10×OD14mm ที่สวมหัวก๊อกได้จริง ใส่ตะกร้าไปแล้ว รอผมตรวจสอบก่อนกดจ่ายเงินเอง</p>
+
+			<figure class="exhibit">
+				<img src={ledgerDetail} alt="รายละเอียดใบขอซื้อ REQ-001 พร้อมบันทึกการจัดหาและตัวที่เลือกจริงหลังแก้สเปก" />
+				<figcaption><span class="ex-tag">แนบ 2</span>ใบขอซื้อฉบับเต็ม REQ-001</figcaption>
+			</figure>
+
+			<div class="callout">
+				<p class="callout-label">ดูฉบับเต็มแบบสด</p>
+				<p>เอกสารนี้อัปเดตตัวเองทุกครั้งที่มีใบขอซื้อใหม่เข้าคิว <a href="https://claude.ai/code/artifact/15c6b372-c30d-441e-9cd8-85d78231117a">เปิดฝ่ายจัดซื้อประจำบ้าน →</a></p>
+			</div>
+
+		</section>
+
+	</div>
+</div>
+
+<style>
+	.case-file {
+		--paper: #f2f1e6;
+		--paper-raised: #ffffff;
+		--ink: #1e2a22;
+		--ink-soft: #55645a;
+		--ink-faint: #869080;
+		--line: #c9d2c0;
+		--line-strong: #9fac93;
+		--stamp-c: #a6371f;
+		--stamp-soft: #f1dcd4;
+		--vault: #2f6b41;
+		--vault-soft: #dcead9;
+		--flag: #8a6a1e;
+		--flag-soft: #efe6cc;
+
+		--font-display: 'Chonburi', 'Noto Sans Thai', var(--font-sans);
+		--font-mono-case: 'JetBrains Mono', var(--font-mono);
+
+		color: var(--ink);
+	}
+
+	/* Note: no prefers-color-scheme(dark) override here — the site has no
+	   dark-mode support anywhere else (background stays fixed light), so a
+	   local dark palette would flip text colors without a dark background
+	   to match, producing near-invisible low-contrast text. */
+
+	/* ---------- Masthead ---------- */
+	.masthead {
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 4px;
+		padding: 1.5rem 1.5rem 1.25rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.masthead-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+		margin-bottom: 0.9rem;
+	}
+
+	.kicker {
+		font-family: var(--font-mono-case);
+		font-size: 0.7rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--ink-faint);
+	}
+
+	.stamp {
+		font-family: var(--font-display);
+		font-size: 0.8rem;
+		color: var(--stamp-c);
+		border: 2px solid var(--stamp-c);
+		border-radius: 3px;
+		padding: 0.2rem 0.6rem;
+		transform: rotate(-3deg);
+		white-space: nowrap;
+		animation: stamp-in 0.35s ease-out 0.1s both;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.stamp {
+			animation: none;
+		}
+	}
+
+	@keyframes stamp-in {
+		from {
+			opacity: 0;
+			transform: rotate(-3deg) scale(1.5);
+		}
+		to {
+			opacity: 1;
+			transform: rotate(-3deg) scale(1);
+		}
+	}
+
+	.dek {
+		font-size: 1.05rem;
+		line-height: 1.55;
+		color: var(--ink-soft);
+		margin-bottom: 1.1rem;
+		max-width: 46ch;
+	}
+
+	.memo-fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+		gap: 0.9rem 1.5rem;
+		padding-top: 1rem;
+		border-top: 1px dashed var(--line-strong);
+	}
+
+	.memo-fields dt {
+		font-family: var(--font-mono-case);
+		font-size: 0.65rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--ink-faint);
+		margin-bottom: 0.2rem;
+	}
+
+	.memo-fields dd {
+		margin: 0;
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	/* ---------- Cover exhibit ---------- */
+	.exhibit {
+		margin: 0 0 1.5rem;
+	}
+
+	.exhibit img {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 4px;
+		border: 1px solid var(--line);
+	}
+
+	.exhibit figcaption {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.6rem;
+		font-size: 0.8rem;
+		color: var(--ink-faint);
+	}
+
+	.ex-tag {
+		font-family: var(--font-mono-case);
+		font-size: 0.65rem;
+		letter-spacing: 0.06em;
+		color: var(--vault);
+		border: 1px solid var(--vault);
+		border-radius: 2px;
+		padding: 0.1rem 0.4rem;
+		white-space: nowrap;
+	}
+
+	/* ---------- Index ---------- */
+	.index {
+		position: sticky;
+		top: 0;
+		z-index: 5;
+		display: flex;
+		gap: 0.25rem;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 4px;
+		padding: 0.35rem;
+		margin-bottom: 2rem;
+		overflow-x: auto;
+	}
+
+	.index a {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		padding: 0.5rem 0.5rem;
+		border-radius: 3px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--ink-soft);
+		white-space: nowrap;
+		transition: background 0.15s ease, color 0.15s ease;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.index a {
+			transition: none;
+		}
+	}
+
+	.index a:hover,
+	.index a:focus-visible {
+		background: var(--vault-soft);
+		color: var(--vault);
+		text-decoration: none;
+	}
+
+	.index a:focus-visible {
+		outline: 2px solid var(--vault);
+		outline-offset: -2px;
+	}
+
+	.i-num {
+		font-family: var(--font-mono-case);
+		font-size: 0.7rem;
+		color: var(--ink-faint);
+	}
+
+	/* ---------- Prose / sections ---------- */
+	.prose section {
+		margin-bottom: 2.75rem;
+		scroll-margin-top: 4.5rem;
+	}
+
+	.prose section:last-child {
+		margin-bottom: 0;
+	}
+
+	.prose h2 {
+		display: flex;
+		align-items: baseline;
+		gap: 0.65rem;
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: 1.35rem;
+		margin-bottom: 1rem;
+		color: var(--ink);
+	}
+
+	.h-num {
+		font-family: var(--font-mono-case);
+		font-size: 0.85rem;
+		color: var(--vault);
+		border: 1px solid var(--line-strong);
+		border-radius: 3px;
+		padding: 0.1rem 0.4rem;
+	}
+
+	.prose p {
+		font-size: 1rem;
+		line-height: 1.75;
+		margin-bottom: 1.1rem;
+		color: var(--ink);
+	}
+
+	.prose section p:last-child {
+		margin-bottom: 0;
+	}
+
+	.prose :global(code) {
+		font-family: var(--font-mono-case);
+		background: var(--paper);
+		border: 1px solid var(--line);
+	}
+
+	/* ---------- Correction / callout boxes ---------- */
+	.correction,
+	.callout {
+		border-radius: 4px;
+		padding: 1.1rem 1.25rem;
+		margin: 1.5rem 0;
+	}
+
+	.correction {
+		background: var(--flag-soft);
+		border: 1px solid var(--flag);
+	}
+
+	.correction-label,
+	.callout-label {
+		font-family: var(--font-mono-case);
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+	}
+
+	.correction-label {
+		color: var(--flag);
+	}
+
+	.correction p:not(.correction-label) {
+		margin-bottom: 0;
+		color: var(--ink);
+	}
+
+	.callout {
+		background: var(--vault-soft);
+		border: 1px solid var(--vault);
+	}
+
+	.callout-label {
+		color: var(--vault);
+	}
+
+	.callout p:not(.callout-label) {
+		margin-bottom: 0;
+	}
+
+	.callout a {
+		color: var(--vault);
+		font-weight: 600;
+	}
+
+	@media (max-width: 480px) {
+		.masthead {
+			padding: 1.25rem 1rem;
+		}
+
+		.dek {
+			max-width: none;
+		}
+
+		.index a {
+			font-size: 0.78rem;
+			padding: 0.5rem 0.35rem;
+		}
+
+		.i-num {
+			display: none;
+		}
+	}
+</style>
