@@ -7,6 +7,9 @@ export interface BlogPostMeta {
 	date: string;
 	published: boolean;
 	image?: string;
+	/** Pixel size of `image`, emitted as og:image:width/height so Facebook can show it on first share. */
+	imageWidth?: number;
+	imageHeight?: number;
 	/** Optional language hint for legacy single-file posts. Folder posts derive it from the filename. */
 	lang?: Lang;
 }

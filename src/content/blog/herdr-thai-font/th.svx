@@ -2,7 +2,9 @@
 title: "ทำให้ภาษาไทยในเทอร์มินัล Herdr อ่านง่าย: รวมฟอนต์เอง 2 รอบ กว่าจะได้แบบที่ใช่"
 description: "Herdr Desktop แสดงภาษาไทยเพี้ยน ญ ฌ ถูกบีบ วรรณยุกต์ลอยผิดที่ ไม่มีใครแจ้งปัญหา และไม่มีที่ตั้งฟอนต์สำรอง เลยรวมตัวไทยเข้ากับ JetBrains Mono เอง รอบแรกถูกต้องแต่อ่านยาก รอบสองใช้ Noto Sans Thai Looped แล้วถึงลงตัว"
 date: '2026-11-10'
-image: /blog/herdr-thai-font/cover.png
+image: /blog/herdr-thai-font/og.png
+imageWidth: 1200
+imageHeight: 630
 published: true
 lang: th
 ---

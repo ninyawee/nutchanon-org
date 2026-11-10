@@ -2,7 +2,9 @@
 title: "Making Thai Readable in the Herdr Terminal: Two Font Merges to Get It Right"
 description: "Herdr Desktop drew Thai badly: squeezed letters, misplaced tone marks, no fallback-font setting and no open issue. So I merged Thai glyphs into JetBrains Mono myself. The first merge was correct but hard to read; the second, with Noto Sans Thai Looped, worked."
 date: '2026-11-10'
-image: /blog/herdr-thai-font/cover.png
+image: /blog/herdr-thai-font/og.png
+imageWidth: 1200
+imageHeight: 630
 published: true
 lang: en
 ---

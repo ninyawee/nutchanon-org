@@ -21,8 +21,15 @@
 	<meta property="og:title" content={data.meta.title} />
 	<meta property="og:description" content={data.meta.description} />
 	<meta property="og:type" content="article" />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:site_name" content="Nutchanon" />
+	<meta property="og:locale" content={data.lang === 'th' ? 'th_TH' : 'en_US'} />
 	{#if data.meta.image}
 		<meta property="og:image" content={SITE + data.meta.image} />
+		{#if data.meta.imageWidth && data.meta.imageHeight}
+			<meta property="og:image:width" content={String(data.meta.imageWidth)} />
+			<meta property="og:image:height" content={String(data.meta.imageHeight)} />
+		{/if}
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:image" content={SITE + data.meta.image} />
 	{/if}
