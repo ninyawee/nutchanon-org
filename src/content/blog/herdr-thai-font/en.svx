@@ -116,7 +116,7 @@ I haven't reported this to Herdr. The lasting fix is a fallback-font setting in 
 
 ## Try it
 
-The build script is [build-merge.py](/blog/herdr-thai-font/build-merge.py). You need JetBrains Mono and Noto Sans Thai Looped installed:
+The build script, `build-merge.py`, is in [this gist](https://gist.github.com/ninyawee/fabb1d646c910f6551ededc99c213f3b). You need JetBrains Mono and Noto Sans Thai Looped installed:
 
 ```bash
 uv run --with fonttools python build-merge.py \

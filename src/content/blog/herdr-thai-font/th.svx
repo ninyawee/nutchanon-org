@@ -116,7 +116,7 @@ lang: th
 
 ## ลองใช้ดู
 
-สคริปต์สร้างฟอนต์อยู่ที่ [build-merge.py](/blog/herdr-thai-font/build-merge.py) ต้องมี JetBrains Mono และ Noto Sans Thai Looped ในเครื่องก่อน:
+สคริปต์สร้างฟอนต์อยู่ใน [gist นี้](https://gist.github.com/ninyawee/fabb1d646c910f6551ededc99c213f3b) (`build-merge.py`) ต้องมี JetBrains Mono และ Noto Sans Thai Looped ในเครื่องก่อน:
 
 ```bash
 uv run --with fonttools python build-merge.py \
