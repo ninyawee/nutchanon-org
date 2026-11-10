@@ -1,0 +1,94 @@
+{
+	"blog/agent-browser-setup/index.html": [
+		"og:image is 1376x768, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/agentic-gis-spatial-formats/index.html": [
+		"og:image is 1376x768, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/claude-code-sudo-hook/index.html": [
+		"og:image is 1376x768, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/deep-asupha/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/electron-parameter-passing/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/forkbomb/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/gh-x-html/en/index.html": [
+		"og:image is 2752x1536, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/gh-x-html/index.html": [
+		"og:image is 2752x1536, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/ghostty-vouch-denounce/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/in-html/en/index.html": [
+		"og:image is 2752x1536, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/in-html/index.html": [
+		"og:image is 2752x1536, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/new-year-2022/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/purchase-division/index.html": [
+		"og:image is 1600x893, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/python-link-original/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/python-link-rewrite/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/root-gate/en/index.html": [
+		"og:image is 700x480, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/root-gate/index.html": [
+		"og:image is 700x480, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/suffering-of-life/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/train-of-thought-governance/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	],
+	"blog/until-we-reach-shared-understanding/en/index.html": [
+		"og:image is 2752x1536, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/until-we-reach-shared-understanding/index.html": [
+		"og:image is 2752x1536, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/virtua-chat-svelte5/index.html": [
+		"og:image is 1344x768, not 1200x630",
+		"missing og:image:width/height"
+	],
+	"blog/zed2i-ros2-jetson-docker/index.html": [
+		"twitter:card is not summary_large_image",
+		"missing og:image"
+	]
+}
