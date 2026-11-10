@@ -20,13 +20,15 @@ export async function GET() {
 
 	const items = posts
 		.map((post) => {
-			const url = `${SITE_URL}/blog/${post.slug}`;
+			const url = `${SITE_URL}/blog/${post.slug}/`;
+			// Keep the original slash-less guid so feed readers don't re-show every post as new.
+			const guid = `${SITE_URL}/blog/${post.slug}`;
 			const pubDate = new Date(post.date).toUTCString();
 			return `
 		<item>
 			<title>${escapeXml(post.title)}</title>
 			<link>${url}</link>
-			<guid isPermaLink="true">${url}</guid>
+			<guid isPermaLink="false">${guid}</guid>
 			<description>${escapeXml(post.description)}</description>
 			<pubDate>${pubDate}</pubDate>
 		</item>`;

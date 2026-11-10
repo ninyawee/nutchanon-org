@@ -25,7 +25,9 @@ export function primaryLang(available: readonly Lang[]): Lang {
  * URL for a post in a given language. The primary language lives at the bare
  * `/blog/<slug>`; other languages get an explicit `/blog/<slug>/<lang>` suffix.
  * This keeps one canonical URL per language with no duplicate-content pages.
+ * Paths end in `/` to match `trailingSlash = 'always'`: GitHub Pages redirects the
+ * bare form, and a redirecting canonical/og:url makes Facebook drop the preview.
  */
 export function postPath(slug: string, lang: Lang, available: readonly Lang[]): string {
-	return lang === primaryLang(available) ? `/blog/${slug}` : `/blog/${slug}/${lang}`;
+	return lang === primaryLang(available) ? `/blog/${slug}/` : `/blog/${slug}/${lang}/`;
 }

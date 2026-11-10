@@ -3,7 +3,7 @@
 //
 // The standard (what Facebook, LINE and X need to show a large preview on first share):
 //   - og:title, og:description, og:type=article, og:site_name, og:locale
-//   - og:url equal to <link rel="canonical">
+//   - og:url equal to <link rel="canonical">, pointing at a built page with no redirect (trailing /)
 //   - og:image: absolute https://nutchanon.org URL to a PNG or JPEG in the build, at most 8 MB,
 //     exactly 1200x630 (1.91:1), with og:image:width / og:image:height matching the file
 //   - twitter:card=summary_large_image and twitter:image equal to og:image
@@ -86,7 +86,15 @@ function audit(file) {
 	if (need('og:type') && tags['og:type'] !== 'article') issues.push('og:type is not article');
 	need('og:site_name');
 	need('og:locale');
-	if (need('og:url') && tags['og:url'] !== canonical) issues.push('og:url differs from canonical');
+	const url = need('og:url');
+	if (url && url !== canonical) issues.push('og:url differs from canonical');
+	if (url && url.startsWith(SITE + '/')) {
+		const path = url.slice(SITE.length);
+		// GitHub Pages 301-redirects /x to /x/; Facebook drops the preview when og:url redirects.
+		if (!path.endsWith('/') || !existsSync(join(BUILD, path, 'index.html'))) issues.push('og:url is not a built page (would redirect)');
+	} else if (url) {
+		issues.push('og:url is not an absolute nutchanon.org URL');
+	}
 	if (tags['twitter:card'] !== 'summary_large_image') issues.push('twitter:card is not summary_large_image');
 
 	const img = need('og:image');

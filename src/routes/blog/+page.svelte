@@ -17,7 +17,7 @@
 	<ul class="post-list">
 		{#each data.posts as post}
 			<li>
-				<a href="/blog/{post.slug}">
+				<a href="/blog/{post.slug}/">
 					<article>
 						{#if post.image}
 							<img class="thumb" src={post.image} alt="" loading="lazy" />
