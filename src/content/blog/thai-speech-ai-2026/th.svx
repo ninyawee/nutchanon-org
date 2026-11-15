@@ -1,0 +1,106 @@
+---
+title: "สถานะ AI เสียงภาษาไทย พ.ย. 2026: ถอดเสียงและอ่านออกเสียง เจ้าไหนเร็ว เจ้าไหนถูก"
+description: "เทียบต้นทุนกับความเร็วของ speech-to-text และ text-to-speech ภาษาไทย ทั้ง Soniox, ElevenLabs, Paxa และโมเดล open-weight อย่าง Typhoon Whisper จากราคาจริงและการวัดจริง"
+date: '2026-11-02'
+image: /blog/thai-speech-ai-2026/og.png
+imageWidth: 1200
+imageHeight: 630
+published: true
+lang: th
+---
+
+<style>
+.sp-post .callout {
+  border-left: 3px solid #1f6f5c;
+  background: rgba(31, 111, 92, 0.07);
+  padding: 1rem 1.2rem;
+  border-radius: .35rem;
+  margin: 1.5rem 0;
+}
+.sp-post .callout strong { display: block; margin-bottom: .25rem; font-size: .85em; letter-spacing: .04em; }
+.sp-post .muted { opacity: .7; font-size: .9em; }
+</style>
+
+<div class="sp-post">
+
+ช่วงนี้ผมใช้เสียงกับคอมพิวเตอร์ทุกวัน ทั้งพูดให้พิมพ์ ([วิธีตั้งค่าบน Omarchy](/blog/thai-voice-typing-omarchy/)) และให้มันอ่านภาษาไทยออกเสียงทำวิดีโอ เลยถือโอกาสจดไว้ว่าตอนนี้ (พฤศจิกายน 2026) ถ้าจะทำอะไรกับเสียงภาษาไทย มีตัวเลือกอะไรบ้าง ราคาเท่าไร และเร็วแค่ไหน
+
+<div class="callout">
+<strong>วิธีวัด</strong>
+ราคามาจากหน้าราคาทางการของแต่ละเจ้า ณ 2 พ.ย. 2026 คิดที่ 32.9 บาทต่อดอลลาร์ ความเร็ววัดเองด้วยคลิปไทยปนอังกฤษยาว 7.6 วินาที ส่งเข้าไปตามเวลาจริงทีละ 100 ms วัดเจ้าละ 3 รอบผ่านเน็ตบ้านในประเทศไทย เป็นคลิปเดียวและเป็นเสียงสังเคราะห์ ใช้ดูภาพรวม ไม่ใช่ benchmark ทางวิชาการ
+</div>
+
+## ถอดเสียง (Speech-to-Text)
+
+ประโยคทดสอบ: "วันนี้ผมจะ deploy เวอร์ชันใหม่ของ API ขึ้น production ตอนบ่ายสามโมง แล้วจะส่ง link ให้ทีมรีวิวใน Slack นะครับ"
+
+### ราคา
+
+| เจ้า | ส่งไฟล์ (batch) | แบบ stream | ใช้ 30 ชม./เดือน (stream) |
+|---|---|---|---|
+| **Soniox** | $0.10/ชม. ≈ ฿3.3 | **$0.12/ชม. ≈ ฿3.9** | **≈ ฿118** |
+| **ElevenLabs** Scribe v2 | $0.22/ชม. ≈ ฿7.2 | $0.39/ชม. ≈ ฿12.8 | ≈ ฿385 |
+| **Paxa** STT Lite (preview) | ฿16.45/ชม. | ≈ ฿24.7/ชม. | ≈ ฿740 |
+| Typhoon Whisper (รันในเครื่อง) | ฟรี | ฟรี | ค่าไฟ |
+
+### ความเร็วและความแม่น
+
+| แบบ | เจ้า | ความเร็ว | ผลถอด |
+|---|---|---|---|
+| stream | **Soniox** `stt-rt-v4` | คำแรก 1.45 s · ครบหลังจบเสียง **+0.30 s** | ดีที่สุด คำอังกฤษเป็นตัวอังกฤษครบ ได้ "บ่าย 3 โมง" |
+| stream | Paxa realtime | คำแรก 5.31 s · ครบ +0.17 s | ไม่มีข้อความระหว่างพูด ออกทีละประโยค "production" กลายเป็น "โปรดักชั่น" |
+| ส่งไฟล์ | **Paxa** REST | **0.69 s** | ดี แต่ "บ่าย สาม โมง" แยกคำ |
+| ส่งไฟล์ | Typhoon Whisper turbo บน Radeon 780M | 1.20 s | ดีมาก |
+| ส่งไฟล์ | Soniox async | 3.94 s | ดีที่สุด |
+| stream | ElevenLabs Scribe v2 | ยังไม่ได้วัด | |
+
+
+Soniox แบบ stream ส่งคำมาทีละคำ ตามหลังเสียงพูดเฉลี่ย 0.79 วินาที และไม่เคยต้องลบแก้คำที่ส่งมาแล้วในการทดสอบ
+
+### ฝั่ง open-weight
+
+ถ้าต้องรันเองในเครื่อง ตัวที่น่าใช้คือ Whisper large-v3 ที่ fine-tune ภาษาไทย
+
+- **Typhoon Whisper large-v3 / turbo** (SCB10X) ทีม Typhoon รายงาน CER ดีที่สุดบนชุดทดสอบของตัวเอง
+- **Pathumma-whisper-th-large-v3** (NECTEC, Apache-2.0) WER บน Gowajee 9.84 เทียบกับ Whisper ตัวมาตรฐาน 46.59
+- **Thonburian Whisper** (biodatlab)
+
+แปลงเป็น GGML แล้วใช้กับ whisper.cpp ได้ ตัว turbo แบบ q5_0 ใหญ่แค่ราว 0.55 GB
+
+<p class="muted">ตัวเลข WER/CER เหล่านี้ผู้พัฒนาวัดเองทั้งหมด และแต่ละเจ้าตัดคำกับ normalize ข้อความต่างกัน เทียบข้ามเจ้าตรง ๆ ไม่ได้</p>
+
+จุดอ่อนที่ทุกตัวมีเหมือนกันคือ **พูดไทยปนอังกฤษ** โมเดลมักเขียนคำอังกฤษเป็นตัวไทยบ้าง ตัวอังกฤษบ้าง Typhoon ASR แบบ realtime ตั้งใจเขียนคำอังกฤษเป็นตัวไทยเลย ซึ่งดีสำหรับงานถอดเทปแต่ไม่เหมาะกับการพิมพ์ด้วยเสียง
+
+## อ่านออกเสียง (Text-to-Speech)
+
+| เจ้า / โมเดล | ราคาที่ประกาศ | ต่อ 1,000 ตัวอักษร | ต่อเสียง 1 ชม.* | ภาษาไทย |
+|---|---|---|---|---|
+| **Paxa** TTS Flash v2 | 10 credit / 1k | **฿0.33** | **≈ ฿18** | ✅ ใช้จริง มีเสียงไทยราว 50 เสียง |
+| **Soniox** tts-rt-v2 | $0.70 / ชม. เสียง | ≈ ฿0.43 | ≈ ฿23 | ยังไม่ได้ตรวจ |
+| **ElevenLabs** Flash / Turbo | $0.04 / 1k | ≈ ฿1.3 | ≈ ฿71 | ยังไม่ได้ตรวจ |
+| **ElevenLabs** v3 / v4 / Multilingual v2 | $0.08 / 1k | ≈ ฿2.6 | ≈ ฿142 | ยังไม่ได้ตรวจ |
+
+<p class="muted">*สมมติเสียงพูด 1 ชั่วโมงราว 54,000 ตัวอักษร ภาษาไทยจริงอาจต่างจากนี้ ใช้เทียบคร่าว ๆ เท่านั้น</p>
+
+
+Paxa เป็นสตาร์ทอัปไทย ราคาถูกที่สุดในกลุ่มนี้ และผมใช้เสียงไทยของมันทำวิดีโอเดโมอยู่แล้ว ส่วน ElevenLabs แพงกว่า 4-8 เท่า แลกกับระบบที่ใหญ่กว่าและการโคลนเสียง
+
+## สรุปตอนนี้
+
+- **พิมพ์ด้วยเสียง ไทยปนอังกฤษ:** Soniox แบบ stream ถูกที่สุดและแม่นที่สุดในการทดสอบ
+- **ต้องรอผลหลังพูดจบให้น้อยที่สุดแบบส่งไฟล์:** Paxa REST 0.69 วินาที แต่แพงสุด
+- **ออฟไลน์ ฟรี:** Typhoon Whisper turbo ช้ากว่าเล็กน้อยแต่คุณภาพดีมาก
+- **อ่านออกเสียงภาษาไทย:** Paxa ถูกและภาษาไทยแน่นอน
+
+
+ตลาดนี้เปลี่ยนเร็วมาก ราคาและโมเดลในบทความนี้อาจล้าสมัยภายในไม่กี่เดือน ผมจะกลับมาอัปเดตถ้ามีอะไรเปลี่ยนมาก
+
+## แหล่งข้อมูล
+
+- [Soniox pricing](https://soniox.com/pricing) · [Soniox TTS](https://soniox.com/blog/soniox-text-to-speech)
+- [ElevenLabs API pricing](https://elevenlabs.io/pricing/api)
+- [Paxa credits](https://paxalabs.com/docs/credits) และ API `/v1/models` ของ Paxa
+- [Typhoon tech report (arXiv 2601.13044)](https://arxiv.org/abs/2601.13044)
+- [Pathumma-whisper-th-large-v3](https://huggingface.co/nectec/Pathumma-whisper-th-large-v3)
+
+</div>

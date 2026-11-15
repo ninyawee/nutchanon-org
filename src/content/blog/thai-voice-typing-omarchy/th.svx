@@ -1,0 +1,157 @@
+---
+title: "พิมพ์ด้วยเสียงภาษาไทยบน Omarchy: เร็ว ถูก ไทยปนอังกฤษได้"
+description: "ตั้งค่า voxtype + Soniox บน Omarchy ให้พิมพ์ด้วยเสียงภาษาไทยปนอังกฤษ คำขึ้นจอระหว่างพูด ครบหลังพูดจบราว 0.3 วินาที ใช้หนักเดือนละ 30 ชั่วโมงประมาณ ฿118 พร้อมวิธีแก้ Chrome ที่กินตัวอักษรตัวแรก"
+date: '2026-11-02'
+image: /blog/thai-voice-typing-omarchy/og.png
+imageWidth: 1200
+imageHeight: 630
+published: true
+lang: th
+---
+
+<style>
+.vt-post .callout {
+  border-left: 3px solid #1f6f5c;
+  background: rgba(31, 111, 92, 0.07);
+  padding: 1rem 1.2rem;
+  border-radius: .35rem;
+  margin: 1.5rem 0;
+}
+.vt-post .callout-warn { border-left-color: #a5631b; background: rgba(165, 99, 27, 0.07); }
+.vt-post .callout strong { display: block; margin-bottom: .25rem; font-size: .85em; letter-spacing: .04em; }
+</style>
+
+<div class="vt-post">
+
+ผมพิมพ์ด้วยเสียงทั้งวัน ทั้งแชต ทั้งสั่งงาน AI ทั้งเขียนโค้ด และพูดไทยปนอังกฤษแทบทุกประโยค "เดี๋ยว deploy ขึ้น production แล้วส่ง link ใน Slack นะ" แบบนี้แหละครับ
+
+โจทย์เลยมีสามข้อ
+
+1. **ไทยปนอังกฤษต้องออกมาถูก** คำอังกฤษต้องเป็นตัวอังกฤษ ไม่ใช่ "โปรดักชั่น"
+2. **เร็ว** ปล่อยปุ่มแล้วข้อความต้องขึ้นแทบทันที
+3. **ถูก** ใช้ทุกวันได้โดยไม่ต้องคิดเรื่องค่าใช้จ่าย
+
+บทความนี้คือสูตรที่ผมใช้อยู่จริงบน [Omarchy](https://omarchy.org) (Arch + Hyprland) ณ พฤศจิกายน 2026
+
+## สรุปสั้น
+
+| | |
+|---|---|
+| โปรแกรม | [voxtype](https://github.com/peteonrails/voxtype) (แพ็กเกจ `voxtype-bin`) |
+| ตัวถอดเสียง | [Soniox](https://soniox.com) `stt-rt-v4` แบบ stream |
+| ปุ่ม | กด Right Ctrl หนึ่งทีเริ่ม กดอีกทีหยุด |
+| ความเร็ว | คำขึ้นจอระหว่างพูด ครบหลังจบเสียงราว **0.3 วินาที** |
+| ค่าใช้จ่าย | $0.12 ต่อชั่วโมงเสียง ≈ **฿3.9/ชม.** ใช้หนัก 30 ชม./เดือน ≈ **฿118** |
+
+ตัวเลขความเร็วมาจากการวัดของผมเอง ใช้คลิปไทยปนอังกฤษยาว 7.6 วินาที ส่งเสียงเข้าไปตามเวลาจริง วัด 3 รอบผ่านเน็ตบ้าน ส่วนราคามาจากหน้าราคาของ Soniox (คิดที่ 32.9 บาทต่อดอลลาร์)
+
+## ทำไมไม่ใช้ Whisper ในเครื่อง
+
+ลองแล้วครับ และใช้ได้ดีด้วย Whisper ที่ fine-tune ภาษาไทยอย่าง Typhoon Whisper turbo รันบน GPU ในโน้ตบุ๊ก (Radeon 780M ผ่าน Vulkan) ถอดคลิปเดียวกันได้ใน 1.2 วินาที ฟรีและออฟไลน์ แต่มีข้อเสียสองข้อ
+
+- ต้องรอถอดหลังปล่อยปุ่ม ยิ่งพูดยาวยิ่งรอนาน
+- ไทยปนอังกฤษยังพลาดเป็นระยะ
+
+Soniox ถอดทีละคำระหว่างที่เราพูด พอปล่อยปุ่มก็เหลือแค่ท้ายประโยคนิดเดียว และในการทดสอบของผมมันถอดไทยปนอังกฤษได้ดีที่สุด ได้ทั้ง "production" เป็นตัวอังกฤษ และ "บ่าย 3 โมง" เป็นตัวเลข ผมเลยเก็บ Whisper ไว้เป็นตัวสำรองตอนออฟไลน์
+
+## 1. ติดตั้ง
+
+```bash
+yay -S voxtype-bin wtype
+voxtype setup check
+```
+
+`wtype` คือตัวพิมพ์ข้อความลงหน้าต่างบน Wayland ส่วน `setup check` จะบอกว่าทุกอย่างพร้อมหรือยัง
+
+## 2. เก็บ API key ให้ถูกที่
+
+สมัคร Soniox แล้วเอา API key มา **อย่าใส่ใน `config.toml`** ให้แยกไว้ในไฟล์ที่อ่านได้คนเดียว
+
+```bash
+echo 'SONIOX_API_KEY=ใส่คีย์ตรงนี้' > ~/.config/voxtype/secrets.env
+chmod 600 ~/.config/voxtype/secrets.env
+```
+
+แล้วให้ systemd โหลดไฟล์นี้ตอนเปิด daemon
+
+```bash
+mkdir -p ~/.config/systemd/user/voxtype.service.d
+cat > ~/.config/systemd/user/voxtype.service.d/secrets.conf <<'EOF'
+[Service]
+EnvironmentFile=%h/.config/voxtype/secrets.env
+EOF
+systemctl --user daemon-reload
+```
+
+## 3. ตั้งค่า voxtype
+
+ใน `~/.config/voxtype/config.toml`
+
+```toml
+engine = "soniox"
+
+[hotkey]
+key = "RIGHTCTRL"
+mode = "toggle"
+
+[soniox]
+language_hints = ["th", "en"]
+streaming = true
+
+[output]
+mode = "type"
+wtype_shift_prefix = true
+```
+
+แล้ว `systemctl --user restart voxtype`
+
+<div class="callout callout-warn">
+<strong>กับดักที่ 1: ค่าเริ่มต้นของภาษาเป็นฮังการี</strong>
+ถ้าไม่ใส่ <code>language_hints</code> voxtype จะส่ง <code>["hu", "en"]</code> ไปให้ Soniox ภาษาไทยจะออกมาเพี้ยน ต้องใส่ <code>["th", "en"]</code> เองเสมอ
+</div>
+
+## 4. ทำไมเป็นกดหนึ่งทีเริ่ม กดอีกทีหยุด
+
+voxtype ไม่ยอมให้ใช้ engine แบบ stream คู่กับการกดค้าง ถ้าตั้ง `push_to_talk` ไว้ มันจะเปลี่ยนเป็น toggle ให้เองตอนเปิด เหตุผลคือข้อความถูกพิมพ์ออกมาระหว่างที่เราพูด ถ้านิ้วยังกดปุ่มค้างอยู่ตอนนั้น Hyprland จะไม่เห็นตอนปล่อยปุ่ม แล้วการอัดเสียงก็ค้าง ผมเลยตั้ง `toggle` ไว้ตรง ๆ ใน config จะได้ไม่มี warning
+
+ข้อดีของ toggle คือเห็นคำขึ้นจอทีละคำระหว่างพูด
+
+<div class="callout">
+<strong>ถ้าชอบกดค้างแบบผม</strong>
+ผมเสนอตัวเลือก <code>streaming_type_on_release</code> ไว้ใน <a href="https://github.com/peteonrails/voxtype/issues/948">voxtype #948</a> ระหว่างกดค้างเสียงจะ stream ไป Soniox แต่ยังไม่พิมพ์อะไร พอปล่อยปุ่ม รออีกราว 0.3 วินาที ข้อความทั้งก้อนก็พิมพ์ออกมาทีเดียว ได้ความรู้สึกแบบกดค้างกับความเร็วแบบ stream ตอนนี้ยังไม่อยู่ใน voxtype ตัวหลัก ถ้าอยากได้ ไปกด 👍 ที่ issue ได้ครับ
+</div>
+
+## 5. กับดักที่ 2: Chrome กินตัวอักษรตัวแรก
+
+ตอนแรกพิมพ์ใน terminal ได้สมบูรณ์ แต่ใน Chrome ตัวอักษรตัวแรกหายทุกครั้ง บางทีหน้าต่างทำเหมือนโดนกด Escape
+
+ผมไล่ทดสอบด้วยการสั่ง `wtype` ตรง ๆ เข้า textarea ใน Chrome
+
+| ทดสอบ | ผล |
+|---|---|
+| พิมพ์ภาษาไทยปกติ | ไทยออกครบ แต่ตัวแรกหาย |
+| รอก่อนพิมพ์ 0 / 20 / 50 / 100 / 200 ms | ตัวแรกหายทุกครั้ง |
+| ปิด fcitx5 ชั่วคราว | ยังหาย |
+| กด Shift เปล่าหนึ่งทีก่อนพิมพ์ | **ครบทุกตัว** |
+
+แปลว่าไม่ใช่เรื่องภาษาไทย ไม่ใช่ input method และไม่ใช่เรื่องจังหวะเวลา สาเหตุที่น่าจะเป็นมีคนรายงานไว้ใน [voxtype #938](https://github.com/peteonrails/voxtype/issues/938) คือ `wtype` วางตัวอักษรแรกไว้ที่ keycode 1 ซึ่งปกติคือปุ่ม Escape แอปตระกูล Chromium อ่าน keycode เลยเห็นเป็น Escape
+
+ทางแก้คือ `wtype_shift_prefix = true` ที่ใส่ไว้ใน config ข้างบนแล้ว มันกด Shift ก่อนหนึ่งที ให้ Shift เป็นตัวที่โดนกินแทน
+
+## ค่าใช้จ่ายจริงเป็นยังไง
+
+Soniox คิดตามความยาวเสียง $0.12 ต่อชั่วโมงสำหรับแบบ stream คนที่พูดวันละชั่วโมงทุกวันจะตกเดือนละราว ฿118 ส่วนคนที่พูดวันละ 10-20 นาทีจะเหลือหลักสิบบาท
+
+
+ถ้าอยากรู้ว่าเจ้าอื่นเป็นยังไง ทั้ง ElevenLabs, Paxa และ Whisper ในเครื่อง รวมถึงฝั่งอ่านออกเสียง (TTS) ผมเขียนแยกไว้อีกบทความ
+
+## สรุป
+
+- voxtype + Soniox แบบ stream ใส่ `language_hints = ["th", "en"]`
+- เก็บคีย์ในไฟล์ env ที่ systemd โหลด
+- ตั้ง `mode = "toggle"` แล้วเห็นคำขึ้นจอระหว่างพูด
+- ใส่ `wtype_shift_prefix = true` ถ้าใช้ Chrome
+
+ตั้งค่าเสร็จแล้วก็ลืมมันไปได้เลยครับ กด พูด กด
+
+</div>
