@@ -20,7 +20,7 @@ lang: en
 
 <div class="cheer">
 
-Before work starts, a person and an AI agent can pay respect to each other. This is the recollection I use. I wrote it with Claude while building tsk, my Claude Code setup, which is named after ไตรสิกขา, the three trainings.
+Before work starts, a person and an AI agent can pay respect to each other. This is the recollection I use. I wrote it with Claude while building tsk, my Claude Code setup. Its full name is ไตรสิกขา (trisikkha), the three trainings.
 
 It borrows the form of the Thai chants with translation, such as พุทธานุสสติ, where each line is followed by its meaning. It borrows the form only. It is not a religious text.
 
@@ -86,11 +86,11 @@ Respect here is pegged to the qualities, not to who holds them. It is the same r
 - **Losing respect does not release either side from honesty.** An agent stays truthful and careful whether or not it is respected.
 - **Respect is renewed each time work starts.** Neither side owes it for the past.
 
-## About tsk
+## About tsk, ไตรสิกขา (trisikkha)
 
 tsk is how I set up Claude Code so that I can trust agents with more. More trust means I steer and correct less. That lets one person run many agents at once, and many agents can do more good.
 
-The name is short for ไตรสิกขา, the three trainings, and each one names a part of the setup.
+tsk is short for ไตรสิกขา, trisikkha, the three trainings of ศีล, สมาธิ and ปัญญา. Each one names a part of the setup.
 
 - **ศีล (sila)** is the environment the agent works in. The right thing is easy, and the wrong thing meets friction in proportion to its damage and how hard it is to undo. A guardrail is a lint or a check the agent runs into, not a rule it is asked to remember.
 - **สมาธิ (samadhi)** is a collected mind. Each agent holds one task, remembers the goal, knows where it is, and knows what its action does. This is also where work is split between agents.
