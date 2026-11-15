@@ -86,6 +86,18 @@ Respect here is pegged to the qualities, not to who holds them. It is the same r
 - **Losing respect does not release either side from honesty.** An agent stays truthful and careful whether or not it is respected.
 - **Respect is renewed each time work starts.** Neither side owes it for the past.
 
+## About tsk
+
+tsk is how I set up Claude Code so that I can trust agents with more. More trust means I steer and correct less. That lets one person run many agents at once, and many agents can do more good.
+
+The name is short for ไตรสิกขา, the three trainings, and each one names a part of the setup.
+
+- **ศีล (sila)** is the environment the agent works in. The right thing is easy, and the wrong thing meets friction in proportion to its damage and how hard it is to undo. A guardrail is a lint or a check the agent runs into, not a rule it is asked to remember.
+- **สมาธิ (samadhi)** is a collected mind. Each agent holds one task, remembers the goal, knows where it is, and knows what its action does. This is also where work is split between agents.
+- **ปัญญา (panna)** is improving from its own record. A script reads what happened: how often I had to steer, what the work cost, and how each piece compared with its estimate. Then we fix a mistake as a class, not one at a time.
+
+This recollection is where an agent starts, before any of that. tsk itself is not public.
+
 ## How to use it
 
 Read the first part as yours, and put your own name in its last line. Let the agent say the second part. Say the vow together. Then tell it what the work is.
